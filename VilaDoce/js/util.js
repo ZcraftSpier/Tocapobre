@@ -50,10 +50,18 @@ function LG(x1, y1, x2, y2, ...c) { const g = X.createLinearGradient(x1, y1, x2,
 function RG(x, y, r0, r1, ...c) { const g = X.createRadialGradient(x, y, r0, x, y, r1); c.forEach((s, i) => g.addColorStop(i / (c.length - 1), s)); return g; }
 function stroke(w, col) { X.lineWidth = w; X.strokeStyle = col; X.lineCap = 'round'; X.lineJoin = 'round'; X.stroke(); }
 function line(x1, y1, x2, y2, w, col) { X.beginPath(); X.moveTo(x1, y1); X.lineTo(x2, y2); stroke(w, col); }
+// sombra suave: um sprite pré-desenhado (antes era um gradiente radial novo a cada chamada)
+let _shadowSpr = null;
 function softShadow(x, y, rx, a = 0.22) {
-  X.save(); X.translate(x, y); X.scale(1, 0.24);
-  X.fillStyle = RG(0, 0, 0, rx, `rgba(50,35,70,${a})`, 'rgba(50,35,70,0)');
-  X.beginPath(); X.arc(0, 0, rx, 0, TAU); X.fill(); X.restore();
+  if (!_shadowSpr) {
+    _shadowSpr = document.createElement('canvas'); _shadowSpr.width = _shadowSpr.height = 128;
+    const g = _shadowSpr.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(50,35,70,1)'); gr.addColorStop(1, 'rgba(50,35,70,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+  }
+  const ga = X.globalAlpha; X.globalAlpha = ga * a;
+  X.drawImage(_shadowSpr, x - rx, y - rx * 0.24, rx * 2, rx * 0.48);
+  X.globalAlpha = ga;
 }
 function heartPath(x, y, s) {
   X.beginPath();
@@ -72,10 +80,10 @@ function starPath(x, y, r, pts = 5, inner = 0.45) {
 }
 
 // Padrões em alta resolução, em cache por contexto
-const _patC = {}, _patO = {};
+const _patC = {}, _patO = new WeakMap();
 function pat(key, w, h, fn) {
-  const o = _patO[key];
-  if (o && o.ctx === X) return o.p;
+  let po = _patO.get(X); if (!po) { po = {}; _patO.set(X, po); }
+  if (po[key]) return po[key];
   let c = _patC[key];
   if (!c) {
     c = document.createElement('canvas');
@@ -86,6 +94,6 @@ function pat(key, w, h, fn) {
   }
   const p = X.createPattern(c, 'repeat');
   try { p.setTransform(new DOMMatrix().scale(0.5, 0.5)); } catch (e) { /* navegadores antigos */ }
-  _patO[key] = { ctx: X, p };
+  po[key] = p;
   return p;
 }

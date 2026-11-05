@@ -291,8 +291,25 @@ function drawParts() {
 }
 
 // ---------- Câmera ----------
+// ---------- Qualidade adaptativa (resolução do canvas) ----------
+// Celulares têm devicePixelRatio 2.5–3: desenhar tudo nessa resolução custa
+// caro. Começamos num teto menor em telas de toque e ajustamos conforme o FPS.
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const Q = { max: Math.min(devicePixelRatio || 1, TOUCH ? 1.5 : 2), min: 1, k: 0, acc: 0, n: 0, cool: 0 };
+Q.k = Q.max;
+function qualityTick(ms) {
+  // média de tempo de quadro a cada ~1,5 s; muda a resolução com histerese
+  if (Q.cool > 0) { Q.cool -= ms; return; }
+  Q.acc += ms; Q.n++;
+  if (Q.acc < 1500) return;
+  const avg = Q.acc / Q.n; Q.acc = 0; Q.n = 0;
+  let k = Q.k;
+  if (avg > 24 && k > Q.min) k = Math.max(Q.min, k - 0.25);
+  else if (avg < 14 && k < Q.max) k = Math.min(Q.max, k + 0.25);
+  if (k !== Q.k) { Q.k = k; resize(); Q.cool = 1500; }
+}
 function resize() {
-  CSSW = innerWidth; CSSH = innerHeight; DPR = Math.min(devicePixelRatio || 1, 2);
+  CSSW = innerWidth; CSSH = innerHeight; DPR = Math.min(devicePixelRatio || 1, Q.k);
   canvas.width = Math.round(CSSW * DPR); canvas.height = Math.round(CSSH * DPR);
   canvas.style.width = CSSW + 'px'; canvas.style.height = CSSH + 'px';
   const avail = CSSH - DOCK_PX;
@@ -589,13 +606,17 @@ function render() {
   const m = new DOMMatrix([DPR * SCALE, 0, 0, DPR * SCALE, -camX * DPR * SCALE, -CAMY * DPR * SCALE]);
   X.setTransform(m);
   G.viewInv = m.inverse();
-  sc.bg(st, t);
+  drawBg(sc, st, t, camX, m);
   Weather.drawBack(sc);
-  for (const p of sc.props) if (p.z == null && p.draw) p.draw(st[p.id], t, st);
+  // ignora o que está fora da tela (com folga para desenhos que extrapolam a caixa)
+  const vx1 = camX - 320, vx2 = camX + VW + 320;
+  const off = (p) => p.w > 0 && (p.x + p.w < vx1 || p.x > vx2);
+  for (const p of sc.props) if (p.z == null && p.draw && !off(p)) p.draw(st[p.id], t, st);
   const list = drawList();
   for (const it of list) {
-    if (it.p) { it.p.draw(st[it.p.id], t, st); continue; }
+    if (it.p) { if (!off(it.p)) it.p.draw(st[it.p.id], t, st); continue; }
     const e = it.e;
+    if (e.x < vx1 || e.x > vx2) continue;
     if (e.kind === 'char') {
       if (e.state === 'idle') softShadow(e.x, e.y + 2, 80, 0.26);
       else if (e.state === 'held' || e.state === 'fall') softShadow(e.x, clamp(e.state === 'fall' ? e.floorY : e.y + 40, sc.floorTop + 12, sc.floorBot), 60, 0.14);
@@ -634,12 +655,52 @@ function render() {
   }
   Weather.drawScreen(sc);
   X.setTransform(m); Life.drawThoughts(); Chat.draw(); X.setTransform(DPR, 0, 0, DPR, 0, 0);
-  X.fillStyle = RG(CSSW / 2, CSSH / 2, Math.min(CSSW, CSSH) * 0.45, Math.max(CSSW, CSSH) * 0.8, 'rgba(40,20,60,0)', 'rgba(40,20,60,.16)');
-  X.fillRect(0, 0, CSSW, CSSH);
+  // a vinheta agora é um gradiente CSS fixo (#vignette), sem custo por quadro
+}
+
+// ---------- Cache do cenário de fundo ----------
+// O fundo (paredes, piso, céu, morros...) é quase todo estático e era
+// redesenhado inteiro a cada quadro. Agora é desenhado num canvas fora da tela
+// e só refeito quando algo muda (cômodo, noite, tamanho) ou a cada sc.bgRefresh s
+// (nuvens nas janelas, relógio). Camadas animadas: sc.sky() é desenhado antes do
+// cache (céu, nuvens) e sc.anim() depois (ondas, barco, algas...), a cada quadro.
+const BG_REFRESH = 0.4, BG_MAXPX = 8e6;
+const BGC = { c: null, g: null, key: '', t: -1e9, x0: 0, y0: 0, k: 1 };
+function bgKey(sc, st) {
+  return sc.id + '|' + Math.round(VW) + 'x' + Math.round(VH) + '|' + (SCALE * DPR).toFixed(4) + '|' + Math.round(G.nightK * 24) + '|' + (st.rooms ? JSON.stringify(st.rooms) : '');
+}
+function drawBg(sc, st, t, camX, m) {
+  const W = sc.W, x0 = Math.min(0, (W - VW) / 2) - 4, x1 = Math.max(W, x0 + VW) + 8;
+  const k = SCALE * DPR, ww = x1 - x0, hh = VH + 8;
+  let kc = Math.min(k, 4096 / ww, Math.sqrt(BG_MAXPX / (ww * hh)));
+  if (sc.sky) sc.sky(st, t);
+  if (kc < k * 0.7) { sc.bg(st, t); if (sc.anim) sc.anim(st, t); return; } // grande demais (telas enormes): desenha direto
+  const key = bgKey(sc, st);
+  if (key !== BGC.key || t - BGC.t >= (sc.bgRefresh ?? BG_REFRESH) || t < BGC.t) {
+    const pw = Math.ceil(ww * kc), ph = Math.ceil(hh * kc);
+    if (!BGC.c) { BGC.c = document.createElement('canvas'); BGC.g = BGC.c.getContext('2d'); }
+    if (BGC.c.width !== pw || BGC.c.height !== ph) { BGC.c.width = pw; BGC.c.height = ph; }
+    BGC.x0 = x0; BGC.y0 = CAMY - 4; BGC.k = kc; BGC.key = key; BGC.t = t;
+    const prev = X; X = BGC.g;
+    X.setTransform(kc, 0, 0, kc, -x0 * kc, -BGC.y0 * kc);
+    X.clearRect(x0, BGC.y0, ww, hh);
+    sc.bg(st, t);
+    X.setTransform(1, 0, 0, 1, 0, 0); X.globalAlpha = 1; X.globalCompositeOperation = 'source-over'; X.shadowBlur = 0;
+    X = prev; X.setTransform(m);
+  }
+  // copia só a parte visível do cache
+  const sx = (camX - BGC.x0) * BGC.k, sy = (CAMY - BGC.y0) * BGC.k;
+  const sw = Math.min(VW * BGC.k, BGC.c.width - sx), sh = Math.min(VH * BGC.k, BGC.c.height - sy);
+  X.setTransform(1, 0, 0, 1, 0, 0);
+  X.drawImage(BGC.c, sx, sy, sw, sh, 0, 0, sw * k / BGC.k, sh * k / BGC.k);
+  X.setTransform(m);
+  if (sc.anim) sc.anim(st, t);
 }
 function frame_(now) {
-  const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016);
+  const ms = now - lastT;
+  const dt = Math.min(0.05, ms / 1000 || 0.016);
   lastT = now;
+  if (!document.hidden && ms > 0 && ms < 250) qualityTick(ms);
   update(dt);
   if (!MapView.covering() && !Mini.covering()) render();
   MapView.tick(G.t, dt);
