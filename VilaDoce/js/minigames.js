@@ -1,7 +1,8 @@
 'use strict';
 // ======================================================
 //  Fliperama: minigames com o seu personagem
-//  (pulo nas nuvens, chuva de comida, estoura balão, memória musical, corre-corre, piano doce, rinha de galo, boxe da vila, descida na neve)
+//  Este arquivo é o núcleo (menu, laço, toque, efeitos, placar). Cada jogo fica em
+//  js/minigames/<nome>.js e entra no menu na ordem dos <script> do index.html.
 // ======================================================
 const Mini = (() => {
   const KEY = 'vilaDoce.mini';
