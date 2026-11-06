@@ -1048,15 +1048,16 @@ function atlasP(x){const T=(t,f)=>tile64(x,t,f,t*31+7),wv=(i,j)=>((i+j)%2?1.03:.
   if(e<4){c=e==3?GDd:GD;raw=1}
   const dy=j-26,rr=Math.hypot(m,dy-7);if((m<1.5&&Math.abs(dy)<13)||(Math.abs(dy+4)<1.5&&m<8)||(rr<4.2&&rr>2.6)){c=GD;raw=1}
   return[...c,raw,.03]});
- const O={iris:[60,112,196],brow:[70,44,26],bw:.005};paintFaceP(x,P_FACE,O);paintFaceP(x,P_FACEC,{...O,closed:1})}
+ const O={iris:[60,112,196],brow:[70,44,26],bw:.0062,stub:1};paintFaceP(x,P_FACE,O);paintFaceP(x,P_FACEC,{...O,closed:1})}
 // rosto realista 64×64 projetado de frente: olhos com pálpebras e íris, nariz sombreado, lábios, maçãs e mandíbula
 function paintFaceP(x,t,O){const FW=.13,FH=.356,orc=O.orc?1:0;
  tile64(x,t,(i,j)=>{const X=((i+.5)/64*2-1)*FW,Y=FH*(1-(j+.5)/64),ax=Math.abs(X);
   let k=1.03-.08*(ax/FW)**2-(Y<.045?(.045-Y)*1.6:0);
   if(Y>.2&&ax<.06)k*=1.03;if(ax>.096)k*=.92;
-  if(Math.hypot((ax-.086)/.03,(Y-.1)/.016)<1)k*=.93;else if(Math.hypot((ax-.075)/.026,(Y-.128)/.012)<1)k*=1.03;
+  if(Math.hypot((ax-.086)/.03,(Y-.098)/.018)<1)k*=.87;if(ax<.0022&&Y>.018&&Y<.034)k*=.9;if(Y>.066&&Y<.093&&Math.abs(ax-(.02+(.092-Y)/.026*.011))<.0016)k*=.86;else if(Math.hypot((ax-.075)/.026,(Y-.128)/.012)<1)k*=1.03;
   if(Y>.02&&Y<.04&&ax<.022)k*=1.03;
   let c=[214*k,160*k,122*k],raw=0;
+  if(O.stub&&Y<.098&&ax<.104&&Y>.004&&!(ax<.024&&Y>.052&&Y<.075)){const q=((i*7+j*13)%5==0)?.95:1,e=Math.min(1,(.098-Y)/.012);c=[c[0]*(1-.11*e)*q,c[1]*(1-.13*e)*q,c[2]*(1-.1*e)*q]}
   if(O.scl){const sx=X*110,sy=Y*110+(Math.floor(X*110)%2)*.5;if(sx-Math.floor(sx)<.18||sy-Math.floor(sy)<.18)c=K3(c,.84)}
   // nariz
   if(Y>.1&&Y<.15&&X>.006&&X<.015+orc*.004)c=K3(c,.88);if(ax<.004&&Y>.11&&Y<.15)c=K3(c,1.05);
@@ -1065,14 +1066,14 @@ function paintFaceP(x,t,O){const FW=.13,FH=.356,orc=O.orc?1:0;
   if(Y>.084&&Y<.089&&ax<.012)c=K3(c,.8);
   if(Y>.072&&Y<.084&&ax<.0035)c=K3(c,.92);
   // boca
-  const mw=.021+orc*.006;
-  if(ax<mw&&Math.abs(Y-(.066+.0012*(1-(X/mw)**2)))<.0019){c=[112,54,48];raw=1}
-  else if(ax<mw*.9&&Y>.0675&&Y<.074-.004*(ax/mw)**2)c=[c[0]*.92,c[1]*.74,c[2]*.72];
-  else if(ax<mw*.78&&Y>.0555&&Y<.0645){c=[c[0]*1.0,c[1]*.8,c[2]*.77];if(Y>.059&&Y<.0625&&ax<.006)c=K3(c,1.08)}
+  const mw=.023+orc*.006;
+  if(ax<mw&&Math.abs(Y-(.066+.0008*(1-(X/mw)**2)))<.0017){c=[96,58,50];raw=1}
+  else if(ax<mw*.9&&Y>.0675&&Y<.074-.004*(ax/mw)**2)c=[c[0]*.88,c[1]*.8,c[2]*.78];
+  else if(ax<mw*.74&&Y>.057&&Y<.0645){c=[c[0]*.97,c[1]*.86,c[2]*.83];if(Y>.059&&Y<.0625&&ax<.006)c=K3(c,1.08)}
   else if(ax<.011&&Y>.048&&Y<.055)c=K3(c,.84);
   // olhos
-  const EW=.019+orc*.002,dx=ax-.044,dy=Y-.155,eu=.0078*(1-.2*dx/EW)-orc*.0015,el=.0058,er=(dx/EW)**2+(dy/(dy>0?eu:el))**2;
-  if(er<3&&dy>-.004)c=K3(c,.94);if(ax<.028&&ax>.016&&Y>.142&&Y<.166)c=K3(c,.92);
+  const EW=.019+orc*.002,dx=ax-.044,dy=Y-.155,eu=.0068*(1-.25*dx/EW)-orc*.0012,el=.0058,er=(dx/EW)**2+(dy/(dy>0?eu:el))**2;
+  if(er<3.2&&dy>-.004)c=K3(c,.88);if(ax<.028&&ax>.016&&Y>.142&&Y<.166)c=K3(c,.92);
   if(!O.closed){
    if(Math.abs(dy-.0128*(1-.6*(dx/EW)**2))<.0017&&Math.abs(dx)<EW)c=K3(c,.8);
    if(er<1){raw=1;c=dy>.0035?[196,192,190]:[236,232,226];
@@ -1085,7 +1086,7 @@ function paintFaceP(x,t,O){const FW=.13,FH=.356,orc=O.orc?1:0;
   else if(Math.abs(dx)<EW*1.05&&Math.abs(dy-(-.001+.002*(dx/EW)**2))<.0021){c=[60,38,28];raw=1}
   else if(Math.abs(dx)<EW&&dy>-.001&&dy<.009)c=K3(c,.95);
   // sobrancelhas
-  const bx=(ax-.02)/.054;if(bx>=0&&bx<=1){const by=.181+.007*Math.sin(Math.PI*bx*.9)-.003*bx-orc*.004,bw=(O.bw+orc*.0022)*(1-.38*bx);
+  const bx=(ax-.02)/.054;if(bx>=0&&bx<=1){const by=.176+.004*Math.sin(Math.PI*bx*.9)-.001*bx-orc*.004,bw=(O.bw+orc*.0022)*(1-.3*bx);if(Y<by-.004&&Y>by-.013)c=K3(c,.9);
    if(Math.abs(Y-by)<bw&&((i*7+j*3)%5!=0||Math.abs(Y-by)<bw*.6)){c=O.brow;raw=1}}
   if(orc&&ax>.015&&ax<.026&&Y>.052&&Y<.064){c=[236,226,196];raw=1}
   return[...c,raw,.025]})}
@@ -1094,7 +1095,7 @@ const IRIS=[[60,112,196],[64,128,84],[110,72,44],[104,120,140],[80,96,60]];
 function faceP(R0,h,hc){const G=R3.gl;if(!G||!R3.atc)return;
  const ir=R0.id=='elfe'?[226,52,44]:R0.id=='drac'?[236,192,44]:R0.id=='demo'?[250,140,30]:R0.id=='orc'?[200,110,36]:IRIS[[...(h.nm||'')].reduce((a,ch)=>a+ch.charCodeAt(0),0)%5];
  const key=R0.id+ir+hc;if(R3.fk==key)return;R3.fk=key;
- const br=hc.map(v=>Math.min(255,190*v)*.7),x=R3.atc.getContext('2d'),O={iris:ir,brow:br,bw:.005,scl:!!R0.scale,orc:R0.id=='orc'};
+ const br=hc.map(v=>Math.min(255,190*v)*.7),x=R3.atc.getContext('2d'),O={iris:ir,brow:br,bw:.0062,stub:!['elf','elfe','drac'].includes(R0.id),scl:!!R0.scale,orc:R0.id=='orc'};
  paintFaceP(x,P_FACE,O);paintFaceP(x,P_FACEC,{...O,closed:1});upAtlas(G)}
 // malhas próprias do herói (adicionadas em meshes())
 function meshesP(loft,grid,emit){
@@ -1104,7 +1105,7 @@ function meshesP(loft,grid,emit){
   const id=(j,i)=>j*(n+1)+i,T=[];for(let j=0;j<R-1;j++)for(let i=0;i<n;i++){if(skip&&skip(Math.abs((i+.5)/n-.5)*6.2832,pro[j][0]))continue;T.push([id(j,i),id(j,i+1),id(j+1,i+1)],[id(j,i),id(j+1,i+1),id(j+1,i)])}
   return emit(Pp,UV,T,Pp.map(()=>[0,0,0]),Nn=>{for(let j=0;j<R;j++){const a=id(j,0),b=id(j,n);for(let k=0;k<3;k++)Nn[a][k]=Nn[b][k]=Nn[a][k]+Nn[b][k]}})};
  // perfil adulto da cabeça: [y, meia-largura, frente, nuca, deslocamento z]
- const HPP=[[0,.03,.02,.02,.06],[.018,.05,.032,.035,.058],[.042,.072,.048,.058,.046],[.07,.092,.064,.078,.03],[.1,.105,.083,.094,.016],[.13,.113,.1,.108,.007],[.16,.119,.112,.122,0],[.195,.122,.116,.132,-.005],[.235,.121,.112,.137,-.01],[.275,.113,.099,.131,-.015],[.305,.098,.081,.114,-.018],[.33,.07,.057,.082,-.02],[.346,.036,.029,.042,-.02],[.352,.003,.003,.003,-.02]];
+ const HPP=[[0,.042,.022,.022,.058],[.016,.062,.034,.04,.056],[.04,.084,.05,.064,.045],[.07,.102,.066,.082,.029],[.1,.11,.085,.096,.015],[.13,.115,.1,.108,.007],[.16,.119,.112,.122,0],[.195,.122,.116,.132,-.005],[.235,.121,.112,.137,-.01],[.275,.113,.099,.131,-.015],[.305,.098,.081,.114,-.018],[.33,.07,.057,.082,-.02],[.346,.036,.029,.042,-.02],[.352,.003,.003,.003,-.02]];
  const HP2=[];HPP.forEach((r,q)=>{if(q)HP2.push(r.map((v,k)=>(v+HPP[q-1][k])/2));HP2.push(r)});
  const hl=a=>a<.9?.252-.03*(a/.9)**2:a<1.3?.222-.09*(a-.9)/.4:a<1.75?.16:a<2.3?.1:.035;
  // casca que acompanha a cabeça entre duas alturas que variam com o ângulo (linha do cabelo / da barba sem degraus)
@@ -1115,7 +1116,7 @@ function meshesP(loft,grid,emit){
   return emit(Pp,UV,T,Pp.map(()=>[0,0,0]),full?Nn=>{for(let j=0;j<=m;j++){const a=id(j,0),b=id(j,n);for(let k=0;k<3;k++)Nn[a][k]=Nn[b][k]=Nn[a][k]+Nn[b][k]}}:0)};
  const cap=(sx,skip)=>revH(HP2.map(([y,W,Zf,Zb,zc])=>[y*1.03+.004,W*sx+.005,Zf*(sx-.01)+.006,Zb*(sx+.01)+.007,zc]),40,0,skip);
  return{headP:revH(HPP,22,1),
-  hcapP:shell(Math.PI,44,18,hl,()=>.352,[1.07,1.06,1.08,.006,.004]),
+  hcapP:shell(Math.PI,44,18,hl,()=>.352,[1.07,1.06,1.08,.006,.004]),hcapS:shell(Math.PI,44,18,a=>hl(a)+.004,()=>.352,[1.035,1.03,1.045,.004,.003]),
   beardP:shell(1.75,30,10,()=>0,a=>a<1.1?.09-.018*(a/1.1)**2:.072+(a-1.1)/.65*.085,[1.05,1.07,1.06,.004,0],(a,y)=>a<.5&&y>.046&&y<.086),
   clump:loft([[0,.5,.5],[.2,.48,.45,.12],[.4,.4,.38,.35],[.6,.3,.28,.65],[.8,.17,.16,1],[1,.015,.015,1.4]],8),
   noseP:loft([[0,.42,.3,.12],[.12,.5,.42,.13],[.3,.36,.36,.06],[.6,.24,.26,-.06],[1,.2,.2,-.2]],10),
@@ -1128,18 +1129,45 @@ function meshesP(loft,grid,emit){
   capeP:grid(10,12,(u,v)=>{const wd=.24+.14*v;return[[(u-.5)*2*wd,-v*1.08,-.028*Math.sin(u*Math.PI*5)*(.25+v)-.08*v*v],[u,1-v]]}),
   tabP:grid(4,6,(u,v)=>{const wd=.11+.01*v;return[[(u-.5)*2*wd,-v*.6,-.01*Math.sin(u*Math.PI)],[u,1-v]]})}}
 // formas anatômicas (multiplicam o raio do anel): peitoral, escápulas, quadríceps, panturrilha, bíceps, antebraço
+// anel interpolado numa altura qualquer de uma lista de anéis (ordem crescente de y)
+function ringAt(R,y){let q=1;while(q<R.length-1&&R[q][1]<y)q++;const A=R[q-1],B=R[q],f=Math.min(1.2,Math.max(-.2,(y-A[1])/((B[1]-A[1])||1))),L=(k,d)=>(A[k]??d)+((B[k]??d)-(A[k]??d))*f;
+ return[A[0],y,L(2),L(3),L(4,0),L(5,0),L(6,2),0,f<.5?A[8]:B[8]]}
+const rsc=(r,k,b)=>{const q=r.slice();q[2]*=k;q[3]*=k;if(b)q[0]=b;q[7]=0;return q};
+// ponto da superfície de um anel no ângulo t
+function ringPt(r,t){const[,y,a,c,cz=0,cx=0,p=2,,sf]=r,e=2/p,sn=Math.sin(t),co=Math.cos(t),k=sf?sf(sn,co):1;return[cx+k*a*Math.sign(sn)*Math.pow(Math.abs(sn),e),y,cz+k*c*Math.sign(co)*Math.pow(Math.abs(co),e)]}
+// malha deformável a partir de uma grade de pontos (fechada em volta), toda presa a um osso
+function skGrid(G,bone){const m=G.length-1,n=G[0].length-1,V=[],UV=[],W=[],T=[];
+ G.forEach((row,j)=>row.forEach((p,i)=>{V.push(p);UV.push([i/n,j/m]);W.push([bone,1,bone,0])}));
+ const id=(j,i)=>j*(n+1)+i;for(let j=0;j<m;j++)for(let i=0;i<n;i++)T.push(id(j,i),id(j,i+1),id(j+1,i+1),id(j,i),id(j+1,i+1),id(j+1,i));
+ const N=V.map(()=>[0,0,0]);for(let q=0;q<T.length;q+=3){const A=V[T[q]],B=V[T[q+1]],C=V[T[q+2]],e1=[B[0]-A[0],B[1]-A[1],B[2]-A[2]],e2=[C[0]-A[0],C[1]-A[1],C[2]-A[2]],f=[e1[1]*e2[2]-e1[2]*e2[1],e1[2]*e2[0]-e1[0]*e2[2],e1[0]*e2[1]-e1[1]*e2[0]];for(let k=0;k<3;k++){const v=T[q+k];N[v][0]+=f[0];N[v][1]+=f[1];N[v][2]+=f[2]}}
+ for(let j=0;j<=m;j++){const a=id(j,0),b=id(j,n);for(let k=0;k<3;k++)N[a][k]=N[b][k]=N[a][k]+N[b][k]}
+ N.forEach(v=>{const l=Math.hypot(v[0],v[1],v[2])||1;v[0]/=l;v[1]/=l;v[2]/=l});
+ return{V,N,UV,W,T,out:new Float32Array(T.length*9),tmp:new Float32Array(V.length*6)}}
+// faixa inclinada que abraça a superfície do tronco (bandoleira)
+function skBand(R,y0,k,w,d,n){const G=[];for(let j=0;j<=2;j++){const row=[];for(let i=0;i<=n;i++){const t=Math.PI+i/n*6.2832;let y=y0,p;
+  for(let q=0;q<4;q++){p=ringPt(ringAt(R,y),t);y=y0+k*p[0]}y+=(j-1)*w/2;const r=ringAt(R,y);p=ringPt(r,t);const cz=r[4],cx=r[5],rr=Math.hypot(p[0]-cx,p[2]-cz)||1,s=1+d/rr;row.push([cx+(p[0]-cx)*s,p[1],cz+(p[2]-cz)*s])}G.push(row)}
+ return skGrid(G,'to')}
 const thE=(s,c)=>Math.atan2(s,c);
-const SF={pec:(s,c)=>1+.055*Math.exp(-(((Math.abs(thE(s,c))-.55)/.38)**2))+.025*Math.exp(-(((Math.abs(thE(s,c))-2.45)/.45)**2)),
- quad:(s,c)=>1+.045*Math.max(0,c)**2,calf:(s,c)=>1+.09*Math.max(0,-c)**2,bic:(s,c)=>1+.07*Math.max(0,c)**2,fore:(s,c)=>1+.05*Math.max(0,-c)**1.5};
-// corpo contínuo do herói com anatomia
+const SF={pec:(s,c)=>1+.06*Math.exp(-(((Math.abs(thE(s,c))-.55)/.38)**2))+.03*Math.exp(-(((Math.abs(thE(s,c))-2.45)/.45)**2)),
+ quad:(s,c)=>1+.05*Math.max(0,c)**2,calf:(s,c)=>1+.1*Math.max(0,-c)**2,bic:(s,c)=>1+.08*Math.max(0,c)**2,fore:(s,c)=>1+.06*Math.max(0,-c)**1.5,
+ trap:(s,c)=>1+.05*Math.exp(-(((Math.abs(thE(s,c))-2.2)/.6)**2))};
+// corpo contínuo do herói com anatomia masculina; colete, gola, braçadeiras, botas e bandoleira saem da mesma pele
 function skBodyP(T){const key='P'+T.toFixed(3);if(SKC[key])return SKC[key];
- const leg=skPart([['k',-.9,.05*T,.054*T],['k',-.82,.055*T,.059*T,-.003],['k',-.74,.062*T,.068*T,-.008,0,2,0,SF.calf],['k',-.66,.066*T,.072*T,-.012,0,2,0,SF.calf],['k',-.58,.063*T,.067*T,-.006,0,2,0,SF.calf],['k',-.52,.06*T,.064*T,.002],['k',-.485,.06*T,.064*T,.008,0,2,['l',.35]],['l',-.43,.065*T,.069*T,.007,0,2,['k',.3]],['l',-.36,.074*T,.078*T,.002,0,2,0,SF.quad],['l',-.27,.084*T,.088*T,0,0,2,0,SF.quad],['l',-.17,.091*T,.095*T,-.002,0,2,0,SF.quad],['l',-.07,.096*T,.1*T],['l',0,.097*T,.101*T],['hp',.04,.091*T,.095*T,0,0,2,['l',.55]],['hp',.08,.074*T,.076*T,0,0,2,['l',.25]]],18);
- const arm=skPart([['f',-.575,.034*T,.038*T],['f',-.53,.038*T,.042*T],['f',-.46,.045*T,.049*T,0,0,2,0,SF.fore],['f',-.39,.051*T,.054*T,.004,0,2,0,SF.fore],['f',-.34,.05*T,.052*T,.004,0,2,['a',.3]],['a',-.28,.047*T,.049*T,0,0,2,['f',.3]],['a',-.22,.051*T,.054*T,.002,0,2,0,SF.bic],['a',-.15,.056*T,.06*T,.004,0,2,0,SF.bic],['a',-.08,.06*T,.063*T,.004],['a',-.02,.065*T,.067*T],['a',.03,.065*T,.066*T,0,0,2,['to',.25]],['to',.065,.054*T,.056*T,0,0,2,['a',.4]],['to',.09,.034*T,.038*T,0,0,2,['a',.15]]],16);
- const TR=[['hp',-.04,.152*T,.106*T,0,0,2,['to',.2]],['hp',0,.147*T,.102*T,.002,0,2,['to',.5]],['to',.06,.138*T,.096*T,.006],['to',.13,.145*T,.101*T,.01],['to',.2,.162*T,.111*T,.015,0,2.1],['to',.27,.182*T,.12*T,.019,0,2.2,0,SF.pec],['to',.33,.196*T,.125*T,.021,0,2.25,0,SF.pec],['to',.385,.2*T,.122*T,.018,0,2.25,0,SF.pec],['to',.425,.192*T,.114*T,.011,0,2.1],['to',.46,.168*T,.103*T,.003],['to',.49,.13*T,.09*T,-.004],['to',.52,.094,.072,-.006],['to',.545,.068,.062,-.004]];
+ const LR=[['k',-.9,.05*T,.054*T],['k',-.82,.056*T,.06*T,-.003],['k',-.74,.064*T,.07*T,-.008,0,2,0,SF.calf],['k',-.66,.068*T,.074*T,-.012,0,2,0,SF.calf],['k',-.58,.065*T,.069*T,-.006,0,2,0,SF.calf],['k',-.52,.062*T,.066*T,.002],['k',-.485,.062*T,.066*T,.008,0,2,['l',.35]],['l',-.43,.067*T,.071*T,.007,0,2,['k',.3]],['l',-.36,.076*T,.08*T,.002,0,2,0,SF.quad],['l',-.27,.086*T,.09*T,0,0,2,0,SF.quad],['l',-.17,.093*T,.097*T,-.002,0,2,0,SF.quad],['l',-.07,.097*T,.1*T],['l',0,.097*T,.1*T],['hp',.04,.09*T,.094*T,0,0,2,['l',.55]],['hp',.08,.072*T,.074*T,0,0,2,['l',.25]]];
+ const leg=skPart(LR,18);
+ const boot=skPart([rsc(ringAt(LR,-.93),1.08,'k'),rsc(ringAt(LR,-.9),1.13,'k'),rsc(ringAt(LR,-.82),1.12,'k'),rsc(ringAt(LR,-.74),1.1,'k'),rsc(ringAt(LR,-.66),1.1,'k'),rsc(ringAt(LR,-.6),1.12,'k'),rsc(ringAt(LR,-.585),1.28,'k'),rsc(ringAt(LR,-.56),1.24,'k'),rsc(ringAt(LR,-.552),1.04,'k')],18);
+ const strap=skPart([rsc(ringAt(LR,-.77),1.12,'k'),rsc(ringAt(LR,-.765),1.17,'k'),rsc(ringAt(LR,-.735),1.17,'k'),rsc(ringAt(LR,-.73),1.12,'k')],18);
+ const AR=[['f',-.575,.036*T,.04*T],['f',-.53,.04*T,.044*T],['f',-.46,.047*T,.051*T,0,0,2,0,SF.fore],['f',-.39,.053*T,.056*T,.004,0,2,0,SF.fore],['f',-.34,.052*T,.054*T,.004,0,2,['a',.3]],['a',-.28,.049*T,.051*T,0,0,2,['f',.3]],['a',-.22,.053*T,.056*T,.002,0,2,0,SF.bic],['a',-.15,.058*T,.062*T,.004,0,2,0,SF.bic],['a',-.08,.063*T,.066*T,.004],['a',-.02,.068*T,.07*T],['a',.025,.067*T,.068*T,0,0,2,['to',.3]],['to',.048,.054*T,.056*T,0,0,2,['a',.4]],['to',.062,.032*T,.036*T,0,0,2,['a',.15]]];
+ const arm=skPart(AR,16);
+ const brac=skPart([rsc(ringAt(AR,-.572),1.06,'f'),rsc(ringAt(AR,-.56),1.17,'f'),rsc(ringAt(AR,-.46),1.15,'f'),rsc(ringAt(AR,-.39),1.13,'f'),rsc(ringAt(AR,-.36),1.13,'f'),rsc(ringAt(AR,-.35),1.04,'f')],16);
+ const TR=[['hp',-.04,.148*T,.104*T,0,0,2,['to',.2]],['hp',0,.143*T,.1*T,.002,0,2,['to',.5]],['to',.06,.137*T,.095*T,.006],['to',.13,.147*T,.1*T,.01],['to',.2,.169*T,.112*T,.015,0,2.1],['to',.27,.2*T,.124*T,.019,0,2.15,0,SF.pec],['to',.33,.218*T,.13*T,.021,0,2.2,0,SF.pec],['to',.385,.222*T,.125*T,.018,0,2.15,0,SF.pec],['to',.425,.21*T,.114*T,.01,0,2.1,0,SF.trap],['to',.46,.172*T,.1*T,.0,0,2,0,SF.trap],['to',.49,.118*T,.086*T,-.006],['to',.52,.092,.074,-.008],['to',.545,.074,.066,-.006]];
  const torso=skPart(TR,24);
- const vest=skPart(TR.filter(r=>r[1]>=0&&r[1]<=.47).map(r=>{const q=r.slice();q[2]*=1.05;q[3]*=1.08;return q}),24,(fr,y)=>Math.abs(fr-.5)<.045+(y>.25?(y-.25)*.45:0));
- const neck=skPart([['to',.5,.078,.068,-.008],['to',.54,.054,.051,-.002,0,2,['hd',.15]],['hd',.6,.046,.046,.008,0,2,['to',.35]],['hd',.64,.044,.044,.012],['hd',.68,.04,.04,.015]],14);
- return SKC[key]={leg,arm,torso,neck,vest}}
+ const vest=skPart(TR.filter(r=>r[1]>=0&&r[1]<=.47).map(r=>{const q=r.slice();q[2]*=1.05;q[3]*=1.08;q[7]=0;return q}),24,(fr,y)=>Math.abs(fr-.5)<.045+(y>.25?(y-.25)*.45:0));
+ const coll=skPart([rsc(ringAt(TR,.45),1.0),rsc(ringAt(TR,.462),1.12),rsc(ringAt(TR,.51),1.13),rsc(ringAt(TR,.53),1.16),rsc(ringAt(TR,.536),1.0)].map(r=>(r[0]='to',r)),24,(fr,y)=>Math.abs(fr-.5)<.07);
+ const belt=skPart([rsc(ringAt(TR,-.055),1.03,'hp'),rsc(ringAt(TR,-.05),1.1,'hp'),rsc(ringAt(TR,0),1.1,'hp'),rsc(ringAt(TR,.005),1.03,'hp')],24);
+ const band=skBand(TR.filter(r=>r[0]=='to'),.27,Math.tan(.62),.04,.021,40);
+ const neck=skPart([['to',.5,.098*T,.082,-.01],['to',.54,.072*T,.066,-.003,0,2,['hd',.15]],['hd',.6,.062,.06,.004,0,2,['to',.35]],['hd',.64,.057,.056,.008],['hd',.68,.05,.05,.012]],16);
+ return SKC[key]={leg,arm,torso,neck,vest,boot,strap,brac,coll,band,belt}}
 // matriz que aponta o eixo +y para d, com a curvatura (+z) voltada para b
 function orient(m,p,d,b){const n=v=>{const l=Math.hypot(v[0],v[1],v[2])||1;return[v[0]/l,v[1]/l,v[2]/l]},y=n(d),k=b[0]*y[0]+b[1]*y[1]+b[2]*y[2],z=n([b[0]-k*y[0],b[1]-k*y[1],b[2]-k*y[2]]),x=[y[1]*z[2]-y[2]*z[1],y[2]*z[0]-y[0]*z[2],y[0]*z[1]-y[1]*z[0]];
  return M.mul(m,new Float32Array([x[0],x[1],x[2],0,y[0],y[1],y[2],0,z[0],z[1],z[2],0,p[0],p[1],p[2],1]))}
@@ -1152,13 +1180,13 @@ function hairP(hd,o,P){const hs=o.hs,T=o.hairT||W1,sw=Math.sin(P.t*1.8),sw2=Math
  if(o.beard&&!o.snout){box(hd,0,0,0,o.jaw||1,1,1,P_HAIR,T,{g:'beardP',sp:.15});for(const sd of[-1,1])H(orient(hd,[sd*.004,.084,.103],[sd,-.35,.25],[0,-.4,1]),.034,.042,.018)}
  if(!hs||hs=='careca')return;
  const top=!o.helm;
- if(top&&hs!='espinhos')box(hd,0,0,0,1,1,1,P_HAIR,hs=='moicano'?K3(T,.6):T,{g:'hcapP',sp:.18,di:hs=='moicano'?.5:0});
+ if(top&&hs!='espinhos')box(hd,0,0,0,1,1,1,P_HAIR,hs=='moicano'?K3(T,.6):T,{g:hs=='curto'||hs=='espetado'||hs=='moicano'?'hcapS':'hcapP',sp:.18,di:hs=='moicano'?.5:0});
  // mechas da frente penteadas para o lado e para trás (testa livre)
  if(top&&!['moicano','espinhos'].includes(hs)){const sl=hs=='espetado'?1.3:1;
-  [[-.55,.95,.13],[-.2,1.0,.14],[.15,1.0,.14],[.5,.95,.13],[.85,.8,.12],[-.9,.78,.12]].forEach(([az,el,l])=>C(az,el-.1,flat(hs=='espetado'?.3:-.12,.3),hs=='espetado'?[0,1,.2]:nn=>nn.map(v=>-v),.12,(hs=='espetado'?.12:.095)*(hs=='curto'?.85:1),.034));
+  (hs=='curto'?[[-.45,.95,.13],[-.15,1.0,.14],[.15,1.0,.14],[.45,.95,.13]]:[[-.55,.95,.13],[-.2,1.0,.14],[.15,1.0,.14],[.5,.95,.13],[.85,.8,.12],[-.9,.78,.12]]).forEach(([az,el,l])=>C(az,el-.12,flat(hs=='espetado'?.3:hs=='curto'?.15:-.22,.3),hs=='espetado'?[0,1,.2]:nn=>nn.map(v=>-v),.12,(hs=='espetado'?.12:.085)*(hs=='curto'?.75:1),.03));
 }
  if(top&&hs=='espetado')[[0,1.25,.11],[.6,1.1,.1],[-.6,1.1,.1],[1.3,.85,.1],[-1.3,.85,.1],[1.9,.65,.1],[-1.9,.65,.1],[2.3,.9,.11],[-2.3,.9,.11],[2.8,1.05,.11],[-2.8,1.05,.11],[3.14,.55,.11],[2.6,.25,.1],[-2.6,.25,.1]].forEach(([az,el,l])=>C(az,el,out(.7,[0,.1,-.7]),[0,.7,-.3],.105,l,.05));
- if(top&&hs=='curto')[[2.4,.6],[-2.4,.6],[3.14,.7],[2.9,.2],[-2.9,.2],[1.8,.4],[-1.8,.4]].forEach(([az,el])=>C(az,el,out(.25,[0,-.6,-.6]),[0,0,-1],.11,.08,.035));
+ 
  if(top&&hs=='moicano')for(let i=0;i<8;i++){const ps=.45+i*.33,r=Math.cos(ps)>0?.128:.15,p=[0,.2+.165*Math.sin(ps),-.008+r*Math.cos(ps)];H(orient(hd,p,[0,Math.sin(ps)+.35,Math.cos(ps)-.8],[0,1,0]),.045,.13+.03*Math.sin(i*1.3),.06)}
  if(top&&hs=='espinhos')for(let i=0;i<5;i++){const ps=.9+i*.42,r=Math.cos(ps)>0?.128:.15,p=[0,.2+.16*Math.sin(ps),-.008+r*Math.cos(ps)];H(orient(hd,p,[0,Math.sin(ps)+.3,Math.cos(ps)-1.1],[0,1,0]),.06,.15-.015*i,.09)}
  if(hs=='longo'){for(let q=0;q<7;q++){const az=Math.PI+(q-3)*.36;C(az,.55,[Math.sin(az)*.2,-1,-.12],[0,0,-1],.16,.44+.04*Math.cos(q*1.7),.05)}
@@ -1174,45 +1202,44 @@ function heroP(m,o,P){const G=R3.gl,gl=G.gl,u=G.u;gl.uniform1f(u.uFl,P.fl||0);gl
  for(const sd of[-1,1]){const kn=P.kn?P.kn[sd>0?1:0]:0;let l=t3(m,sd*.1*th,.94,0);l=rz(l,sd*.028);l=rx(l,(P.leg||0)*sd-kn*.5);
   let k=t3(l,0,-.45,0);k=rx(k,kn);
   skDraw('pL',SB.leg,{hp,l,k},{hp:[sd*.1*th,-.01,0],l:[0,0,0],k:[0,.45,0]},o.leg,W1,[1,1]);
-  box(k,0,0,0,th*1.04,1,th*1.04,P_BOOT,W1,{g:'bootP'});
-  if(o.strap){box(k,0,-.3,0,.18*th,.03,.196*th,P_BELT,W1,{g:'beltP'});box(k,sd*.082*th,-.3,.02,.012,.032,.026,GO,W1,SPC)}
+  skDraw('pB',SB.boot,{k},{k:[0,.45,0]},P_BOOT,W1,[1,1]);
+  if(o.strap){skDraw('pS',SB.strap,{k},{k:[0,.45,0]},P_BELT,W1,[1,1]);box(k,sd*.082*th,-.3,.02,.012,.032,.026,GO,W1,SPC)}
   let ft=t3(k,0,-.43,0);ft=rx(ft,-kn*.5);ft=ry(ft,sd*.12);box(rx(t3(ft,0,0,-.06),Math.PI/2),0,0,0,th,1,1,P_SHOE,W1,{g:'footP'})}
  if(o.tail){let tm=t3(hp,0,-.02,-.1);const dr=o.tail=='drac',n=dr?7:8,w=dr?.15:.06,sl=dr?.11:.09;for(let i=0;i<n;i++){tm=rx(tm,i==0?1.25:-.08);tm=rz(tm,.11*Math.sin(P.t*2.2+i*.7));const q=w*(1-i/n*.8);box(tm,0,-sl/2,0,q,sl+.025,q,o.skin,sk,{g:'sphS',r:RR(o.skin)});tm=t3(tm,0,-sl,0)}
   if(!dr){tm=rx(tm,-.4);box(tm,0,-.05,0,.12,.12,.03,o.skin,sk,{g:'wedge'})}}
  box(hp,0,0,0,th,1,th,o.leg,W1,{g:'hips'});
- if(o.skirt)box(hp,0,0,0,th,1,th,o.skirtT||P_SKRT,W1,{g:'skirtP'});
- box(hp,0,.075,.002,.33*th,.055,.24*th,P_BELT,W1,{g:'beltP'});box(hp,0,.075,.12*th+.004,.06,.055,.016,GO,W1,SPC);box(hp,0,.075,.12*th+.009,.034,.03,.01,P_BELT,W1);
- if(o.pouch){const pm=rz(t3(hp,.17*th,-.01,.05),.08);box(pm,0,0,0,.07,.09,.055,P_GIB,W1);box(pm,0,.03,.03,.074,.04,.012,P_BELT,W1);box(pm,0,.02,.037,.014,.014,.006,GO,W1,SPC)}
+ if(o.skirt)box(hp,0,0,0,th*1.12,1,th*1.08,o.skirtT||P_SKRT,W1,{g:'skirtP'});
+ skDraw('pBl',SB.belt,{hp},{hp:[0,.1,0]},P_BELT,W1,[1,1]);box(hp,0,.075,.112*th+.004,.06,.056,.02,GO,W1,{g:'padW',sp:.75});box(hp,0,.075,.112*th+.011,.03,.03,.008,P_BELT,W1);
+ if(o.pouch){const pm=ry(rz(t3(hp,.158*th,-.005,.06),.08),.5);box(pm,0,0,0,.075,.1,.06,P_GIB,W1,{g:'sphS'});box(rx(t3(pm,0,.035,.006),-.25),0,0,0,.076,.05,.056,P_BELT,W1,{g:'domeS'});box(pm,0,.012,.032,.013,.013,.008,GO,W1,{g:'sphS',sp:.8})}
  let to=t3(hp,0,.1,0);to=rx(to,o.lean||0);to=ry(to,P.tw||0);to=rz(to,-(P.hipR||0)*1.4);if(P.br)to=sc(to,1+.006*P.br,1+.004*P.br,1+.012*P.br);
  skDraw('pT',SB.torso,{hp,to},{hp:[0,.1,0],to:[0,0,0]},o.body,W1,[1,1]);
  if(o.vest)skDraw('pV',SB.vest,{hp,to},{hp:[0,.1,0],to:[0,0,0]},P_VEST,W1,[1,1]);
- if(o.band&&!o.back){const zf=.128*th+.034,zb=-.123*th+.012;box(rz(t3(to,0,.27,zf),.62),0,0,0,.036,.6,.014,P_BELT,W1);box(rz(t3(to,0,.27,zb),.62),0,0,0,.036,.6,.014,P_BELT,W1);box(rz(t3(to,-.058,.33,zf+.008),.62),0,0,0,.05,.055,.014,GO,W1,SPC)}
+ if(o.band&&!o.back){skDraw('pBd',SB.band,{to},{to:[0,0,0]},P_BELT,W1,[1,1]);box(rz(t3(to,-.062,.31,.134*th+.026),.62),0,0,0,.05,.052,.02,GO,W1,{g:'padW',sp:.75})}
  if(o.tab){box(t3(to,0,.43,.138*th+.022),0,0,0,1,1,1,P_TAB,o.tab,{g:'tabP'});box(ry(t3(to,0,.43,-.126*th+.004),Math.PI),0,0,0,1,1,1,P_TAB,o.tab,{g:'tabP'})}
  if(o.back){box(to,0,.3,-.2,.32,.38,.15,P_GIB,W1);box(to,0,.5,-.2,.42,.12,.12,TU,[.7,.35,.25],{g:'cylx'});box(to,0,.32,-.282,.22,.15,.03,P_VEST,W1);box(to,0,.3,-.29,.03,.03,.01,GO,W1,SPC);for(const sd of[-1,1]){box(to,sd*.11,.3,.128*th+.016,.04,.44,.02,P_BELT,W1);box(to,sd*.11,.5,-.2,.03,.13,.13,P_BELT,W1,{g:'cylx'})}}
  if(o.cape){let c=t3(to,0,.5,o.back?-.3:-.125);c=rx(c,.08+(P.cs||0));box(c,0,0,0,1,1,1,P_CAPE,o.capeT,{g:'capeP',e:o.capeE||0});for(const sd of[-1,1])box(to,sd*.13,.49,.1,.042,.042,.03,GO,W1,{g:'sphS',sp:.8,e:o.capeE||0})}
- box(to,0,.47,0,1,1,1,o.col,W1,{g:'collP'});
+ skDraw('pC',SB.coll,{to},{to:[0,0,0]},o.col,W1,[1,1]);
  let hd=t3(to,0,.565,.005);hd=rx(hd,(o.headR||0)+(P.hdP||0));hd=ry(hd,P.hdY||0);hd=rz(hd,(P.hipR||0)*.6);const hs=.94;hd=sc(hd,hs,hs,hs);
  skDraw('pN',SB.neck,{to,hd},{to:[0,0,0],hd:[0,-.565,-.005,hs]},o.skin,sk,RR(o.skin));
- box(hd,0,0,0,o.jaw||1,1,1,P.blink?P_FACEC:P_FACE,sk,{g:'headP'});
+ box(hd,0,0,0,o.jaw||1.06,1,1,P.blink?P_FACEC:P_FACE,sk,{g:'headP'});
  if(o.snout){box(hd,0,.062,.085,.105,.1,.13,o.skin,sk,{g:'noseP'});box(hd,0,.05,.085,.08,.03,.1,o.skin,mulc(sk,[.8,.8,.8]),{g:'sphS'});for(const sd of[-1,1])box(hd,sd*.014,.072,.137,.01,.007,.01,SK,[.15,.12,.12])}
- else box(hd,0,.09,.106,.034*(o.tusk?1.25:1),.064,.042,o.skin,sk,{g:'noseP'});
+ else box(hd,0,.088,.106,.04*(o.tusk?1.2:1),.072,.05,o.skin,sk,{g:'noseP'});
  if(o.eye&&!P.blink)for(const sd of[-1,1])box(hd,sd*.044,.155,.115,.03,.012,.004,LI,o.eye,{e:.55,di:.5});
  for(const sd of[-1,1]){
   if(o.ears=='elf'){let e=t3(hd,sd*.116,.15,-.01);e=rz(e,-sd*1.2);e=rx(e,-.3);box(e,0,.085,0,.04,.19,.024,o.skin,sk,{g:'coneS'})}
   else if(o.ears=='orc'){let e=t3(hd,sd*.118,.145,0);e=rz(e,-sd*1.35);box(e,0,.05,0,.056,.11,.03,o.skin,sk,{g:'coneS'})}
-  else{const e=ry(t3(hd,sd*.118,.145,-.012),-sd*.25);box(e,0,0,0,.026,.062,.042,o.skin,sk,{g:'sphS'});box(e,sd*.006,-.002,.004,.012,.036,.022,o.skin,mulc(sk,[.72,.68,.66]),{g:'sphS'})}
+  else{const e=rz(ry(t3(hd,sd*.106,.142,-.014),-sd*.3),-sd*Math.PI/2);box(e,0,0,0,.07,.07,.05,o.skin,sk,{g:'domeS'});box(e,.004,.022,.004,.036,.02,.024,o.skin,mulc(sk,[.75,.7,.68]),{g:'domeS'})}
   if(o.tusk){const e=rz(t3(hd,sd*.032,.05,.088),sd*.15);box(e,0,.03,0,.02,.055,.02,BO,[1.05,1,.85],{g:'coneS'})}
   if(o.horn=='demo'){let e=t3(hd,sd*.07,.28,.03);e=rz(e,-sd*.55);e=rx(e,-.35);box(e,0,.04,0,.06,.09,.06,BO,[.42,.34,.34],{g:'taper',sp:.4});e=t3(e,0,.08,0);e=rz(e,sd*.6);box(e,0,.06,0,.045,.13,.045,BO,[.3,.24,.24],{g:'coneS',sp:.4})}
   if(o.horn=='drac'){let e=t3(hd,sd*.07,.25,-.07);e=rx(e,-1.25);e=rz(e,-sd*.2);box(e,0,.11,0,.06,.24,.06,BO,[.92,.86,.7],{g:'coneS',sp:.4})}}
  hairP(hd,o,P);
  if(o.helm=='elmo'){box(hd,0,0,0,1.04,1.04,1.04,P_MET,W1,{g:'helmM',sp:.75});box(hd,0,.21,-.015,.36,.04,.37,GO,W1,{g:'taper',sp:.75});box(hd,0,.155,.155,.03,.11,.02,P_MET,W1,SPC);box(hd,0,.385,-.02,.03,.06,.27,GO,W1,SPC)}
  if(o.helm=='capuz'){const c=[.62,.56,.42];box(hd,0,-.01,-.005,1.09,1.09,1.09,LI,c,{g:'helmM',r:[2,1]});box(hd,0,.02,-.085,.3,.2,.24,LI,c,{g:'taper',r:[2,1]})}
- for(const sd of[-1,1]){const A=sd<0?P.aR:P.aL,sx=sd*(.195*th+.01);let a=t3(to,sx,.445,0);a=rx(a,A[0]);a=rz(a,sd*A[1]);
+ for(const sd of[-1,1]){const A=sd<0?P.aR:P.aL,sx=sd*(.21*th+.01);let a=t3(to,sx,.445,0);a=rx(a,A[0]);a=rz(a,sd*A[1]);
   let f=t3(a,0,-.3,0);f=rx(f,A[2]);
   skDraw('pA',SB.arm,{to,a,f},{to:[sx,.445,0],a:[0,0,0],f:[0,.3,0]},o.sl,W1,[1,1]);
   if(o.pad){box(a,0,.012,0,.28,.22,.28,o.pad,W1,{g:'padW',sp:o.pad==P_MET?.75:.1});for(const q of[-1,1])box(a,q*.058,.155,.068,.02,.02,.016,GO,W1,SPC);if(o.pad==P_MET)box(a,0,.19,0,.04,.1,.04,P_MET,W1,{g:'cone',sp:.75})}
-  if(o.glove)box(f,0,-.17,0,1.02*th,.46,1.02*th,o.glove,W1,{g:'farm2',sp:o.glove==P_MET?.7:.1});
-  else if(o.bracer){box(f,0,-.16,0,.98*th,.43,.98*th,P_GLV,W1,{g:'farm2',sp:.1});box(f,0,-.205,0,.106*th,.014,.11*th,GO,W1,{g:'taper',sp:.7})}
+  if(o.glove||o.bracer){gl.uniform1f(u.uSp,0);skDraw('pG',SB.brac,{f},{f:[0,.3,0]},o.glove||P_GLV,W1,[1,1])}
   const k=sd<0?o.wep:o.off,hold=!!(k&&WM[k]),hn=t3(f,0,-.262,0),gl2=o.glove,hT=gl2||o.skin,hC=gl2?W1:sk,c1=hold?1.35:.25,c2=hold?1.45:.35;
   box(hn,0,0,0,1,1,1,hT,hC,{g:'palm',sp:gl2==P_MET?.6:0});
   [[-.028,.03,.0095],[-.0095,.035,.0102],[.0095,.033,.01],[.027,.027,.0088]].forEach(([z,l,r],q)=>{let e=rz(t3(hn,0,-.07,z),-sd*(c1+q*.06));box(e,0,-l/2,0,r*2,l,r*2.1,hT,hC,{g:'fingP'});e=rz(t3(e,0,-l*.92,0),-sd*c2);box(e,0,-l*.42,0,r*1.85,l*.85,r*1.95,hT,hC,{g:'fingP'})});
