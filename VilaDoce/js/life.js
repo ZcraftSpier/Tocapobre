@@ -86,6 +86,7 @@ const Life = (() => {
   }
   function think(e, dt, sc) {
     e.dancing = false;
+    if (e.stare > 0 || e.ghost) { e.moving = false; e.goal = null; return; }
     if (e.state === 'sit' && e.autoSat > 0) { e.autoSat -= dt; if (e.autoSat <= 0 && !(typeof Chat !== 'undefined' && Chat.isBusy(e))) { standUp(e); startFall(e, 0, 0); e.thinkT = rand(2, 5); } return; }
     if (e.state === 'sleep' && e.energy >= 0.98 && !G.night && e.autoSleep) { e.autoSleep = false; standUp(e); startFall(e, 0, 0); return; }
     if (e.state !== 'idle' || e.heldBy) { e.moving = false; e.goal = null; return; }

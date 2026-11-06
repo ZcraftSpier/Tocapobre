@@ -127,6 +127,7 @@ function drawWindow(x, y, w, h, opt = {}) {
   }
   if (n > 0.01) {
     X.globalAlpha = n; nightSky(x, y, w, h, opt.seed || 0);
+    X.globalAlpha = 1; if (typeof Horror !== 'undefined') Horror.windowFigure(x, y, w, h, opt.seed, n); X.globalAlpha = n;
     fc(x + w * 0.72, y + h * 0.3, 24, '#fff6d0'); fc(x + w * 0.72 + 10, y + h * 0.3 - 6, 20, '#22306c');
     if (opt.city) for (let i = 0; i < 9; i++) {
       const bw = 70 + srand(i) * 60, bh = 90 + srand(i + 3) * 160, bx = x + i * (w / 8) - 20;
@@ -700,12 +701,14 @@ SCENES.estudio = {
     baseboard(-1000, 3000, '#f3c6d8');
     floorWood(-1000, 3000, '#eac9a1');
     rug(1000, 900, 300, 44, '#a77bf3', '#d6c4fb');
-    // letreiro neon
+    pottedPlant(1000, 795, 0.85, '#ffd23f');
+  },
+  anim(st, t) {
+    // letreiro neon (pulsa, então fica fora do cache)
     const g = 0.75 + Math.sin(t * 3) * 0.1;
     X.font = '600 50px Fredoka, sans-serif'; X.textAlign = 'center';
     X.shadowColor = '#ff4fa3'; X.shadowBlur = 24 * g; X.fillStyle = '#ff7eb6'; X.fillText('Estúdio ✦ Estilo', 1250, 150); X.shadowBlur = 0;
     X.fillStyle = 'rgba(255,255,255,.7)'; X.fillText('Estúdio ✦ Estilo', 1250, 148);
-    pottedPlant(1000, 795, 0.85, '#ffd23f');
   },
   props: [
     makeStation('st1', 400, 0), makeStation('st2', 800, 1),
@@ -806,13 +809,19 @@ SCENES.parque = {
     { x: 1000, y: 720, kind: 'swing', i: 1, pos: (st) => swingPos(st, 1) },
     { x: 2640, y: 770, kind: 'chair' }, { x: 2740, y: 770, kind: 'chair' },
   ],
-  bg(st, t) {
+  // céu e nuvens a cada quadro; o resto do cenário fica em cache
+  sky(st, t) {
     const n = G.nightK;
     X.fillStyle = LG(0, -1200, 0, 800, '#4fb3f0', '#8fd6ff', '#e2f6ff'); X.fillRect(-1000, -1400, 4800, 2200);
     if (n > 0.01) { X.globalAlpha = n; nightSky(-1000, -1400, 4800, 2200, 3); X.globalAlpha = 1; }
     if (n < 0.99) { X.globalAlpha = 1 - n; fc(2380, 140, 60, '#fff3b0'); fc(2380, 140, 100, 'rgba(255,243,176,.35)'); X.globalAlpha = 1; }
     if (n > 0.01) { X.globalAlpha = n; fc(600, 140, 50, '#fff6d0'); fc(624, 126, 44, '#1e2b68'); X.globalAlpha = 1; }
     for (let i = 0; i < 6; i++) cloud(((t * (6 + i * 2) + i * 640) % 3600) - 600, 80 + (i % 3) * 70, 0.9 + (i % 2) * 0.4, 0.95 - n * 0.6);
+    if (n > 0.5 && Math.random() < 0.25) emit('firefly', rand(G.cam.parque || 0, (G.cam.parque || 0) + VW), rand(500, 900), 1);
+  },
+  bgRefresh: Infinity,
+  bg() {
+    const n = G.nightK;
     X.fillStyle = n > 0.5 ? '#3e6a63' : '#a8dfa0'; X.beginPath(); X.moveTo(-1000, 700);
     for (let x = -1000; x <= 3800; x += 200) X.quadraticCurveTo(x + 100, 560 + srand(x) * 80, x + 200, 700);
     X.lineTo(3800, 800); X.lineTo(-1000, 800); X.fill();
@@ -833,7 +842,6 @@ SCENES.parque = {
       for (let k = 0; k < 5; k++) { const a = (k / 5) * TAU; fc(x + Math.cos(a) * 6, y - 22 + Math.sin(a) * 6, 5, c); }
       fc(x, y - 22, 4, '#ff9f43');
     }
-    if (n > 0.5 && Math.random() < 0.25) emit('firefly', rand(G.cam.parque || 0, (G.cam.parque || 0) + VW), rand(500, 900), 1);
   },
   props: [
     { id: 'tree', x: 0, y: 0, w: 0, h: 0,

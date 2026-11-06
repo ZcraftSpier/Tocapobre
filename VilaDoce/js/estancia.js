@@ -143,8 +143,9 @@ SCENES.estancia = {
     { x: 1650, y: 680, kind: 'chair', tag: 'cavalo', pos: horsePos },
     { x: 2700, y: 640, kind: 'chair', tag: 'trator', pos: tractorPos },
   ],
+  sky(st, t) { skyBg(t, 11); },
+  bgRefresh: Infinity,
   bg(st, t) {
-    skyBg(t, 11);
     const n = G.nightK > 0.5;
     X.fillStyle = n ? '#355c48' : '#9bd77e'; X.beginPath(); X.moveTo(-1000, 720);
     for (let x = -1000; x <= 4200; x += 300) X.quadraticCurveTo(x + 150, 600 + srand(x) * 60, x + 300, 720);

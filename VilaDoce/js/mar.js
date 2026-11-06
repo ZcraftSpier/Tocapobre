@@ -18,7 +18,8 @@ SCENES.mar = {
   id: 'mar', name: 'Fundo do mar', W: 2600, floorTop: 815, floorBot: 950, ceil: 60, underwater: true,
   surfaces: [{ x1: 1560, x2: 1980, y: 610 }, { x1: 180, x2: 420, y: 700 }],
   seats: [{ x: 300, y: 690, kind: 'chair' }, { x: 900, y: 790, kind: 'chair' }],
-  bg(st, t) {
+  // água, raios de luz, cardumes e tartaruga se mexem: desenhados a cada quadro
+  sky(st, t) {
     const n = G.nightK;
     X.fillStyle = LG(0, -1200, 0, 1000, n > 0.5 ? '#0b2a52' : '#3fb7e8', n > 0.5 ? '#08213f' : '#1f86c4', n > 0.5 ? '#041328' : '#0d4d86'); X.fillRect(-1000, -1400, 5000, 2500);
     // raios de luz
@@ -44,9 +45,14 @@ SCENES.mar = {
     fe(66, -4, 22, 16, '#8fcf6a'); fc(76, -8, 3, '#1d1f2e');
     fe(30, 30, 24, 8, '#8fcf6a', 0.6 + Math.sin(t * 3) * 0.3); fe(-30, 30, 20, 7, '#8fcf6a', -0.6 - Math.sin(t * 3) * 0.3);
     X.restore();
-    // areia
+  },
+  // areia em cache; algas, corais e bolhas por cima
+  bgRefresh: Infinity,
+  bg() {
     X.fillStyle = LG(0, 790, 0, 1200, '#f0dca4', '#d9bf7e'); X.fillRect(-1000, 790, 5000, 700);
     for (let i = 0; i < 40; i++) { const x = srand(i + 70) * 2600, y = 820 + srand(i + 90) * 200; X.beginPath(); X.arc(x, y, 30, Math.PI * 1.1, Math.PI * 1.9); stroke(2, 'rgba(160,120,60,.3)'); }
+  },
+  anim(st, t) {
     // algas
     for (let i = 0; i < 18; i++) {
       const x = srand(i + 200) * 2600, h = 120 + srand(i + 220) * 200;

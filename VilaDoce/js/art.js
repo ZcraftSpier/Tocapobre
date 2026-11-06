@@ -834,22 +834,26 @@ function drawChar(e, t, noItem) {
   else if (held) mood = 'wee';
   else if (typeof Chat !== 'undefined' && Chat.talking(e)) mood = 'talk';
   else if (e.reactT > 0 || s === 'swing' || s === 'slide' || dancing) mood = 'laugh';
-  const lx = e.lx || 0, ly = e.ly || 0;
-  const blink = e.blinkT < 0.13;
+  // olhar fixo (horror): olha direto para você, sem piscar; a partir da fase 2 o rosto perde o sorriso
+  const staring = e.stare > 0 && !sleep && !held;
+  if (staring && mood !== 'talk' && (e.ghost || (typeof Horror !== 'undefined' && Horror.stage >= 2))) mood = 'flat';
+  else if (staring && mood !== 'talk') mood = 'smile';
+  const lx = staring ? 0 : e.lx || 0, ly = staring ? 0 : e.ly || 0;
+  const blink = !staring && e.blinkT < 0.13;
   // rosto expressivo: olhos com branco, íris e pálpebra marcada; nariz com volume; boca aberta sorrindo
   const ey = HY + 6;
   const LN = '#2a1d1a', MOUTH = '#6b1f2a', TONGUE = '#ff7d8f';
   const bc = shade(e.hairColor === '#f2f2f2' ? '#9aa0aa' : e.hairColor, -0.25);
   for (const k of [-1, 1]) {
     const ex = k * 29;
-    fe(k * 50, HY + 32, 14, 9, 'rgba(255,100,110,.34)');
+    if (!e.ghost) fe(k * 50, HY + 32, 14, 9, 'rgba(255,100,110,.34)');
     if (mood === 'sleep') { X.beginPath(); X.arc(ex, ey - 2, 6, 0.15 * Math.PI, 0.85 * Math.PI); stroke(3.5, LN); }
     else if (mood === 'laugh' || mood === 'chew') { X.beginPath(); X.arc(ex, ey + 4, 6.5, 1.12 * Math.PI, 1.88 * Math.PI); stroke(3.8, LN); }
     else if (blink) line(ex - 5, ey + 1, ex + 5, ey + 1, 3.5, LN);
     else {
       // olhos de pontinho preto
       const ix = ex + lx * 0.5, iy = ey + ly * 0.5;
-      fe(ix, iy, 5.6, 7, LN);
+      if (mood === 'flat') fe(ix, iy, 7.5, 9, LN); else fe(ix, iy, 5.6, 7, LN);
       if (e.lashes) line(ix + k * 4, iy - 5, ix + k * 9, iy - 9, 2.6, LN);
     }
     // sobrancelha fininha
@@ -871,7 +875,8 @@ function drawChar(e, t, noItem) {
     X.restore();
     path(); stroke(2.4, CHAR_INK);
   };
-  if (mood === 'smile') { X.beginPath(); X.arc(0, my - 8, 10, 0.2 * Math.PI, 0.8 * Math.PI); X.lineCap = 'round'; stroke(3.4, MOUTH); }
+  if (mood === 'flat') line(-9, my - 2, 9, my - 2, 3.4, MOUTH);
+  else if (mood === 'smile') { X.beginPath(); X.arc(0, my - 8, 10, 0.2 * Math.PI, 0.8 * Math.PI); X.lineCap = 'round'; stroke(3.4, MOUTH); }
   else if (mood === 'wee') { fe(0, my + 2, 6, 8, MOUTH); }
   else if (mood === 'laugh') openMouth(13, 14, false);
   else if (mood === 'talk') { const o = Math.abs(Math.sin(t * 21 + ph)); openMouth(8 - o * 1.5, 3 + o * 9, false); }

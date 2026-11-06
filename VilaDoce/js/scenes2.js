@@ -373,32 +373,39 @@ SCENES.praia = {
     { x1: 1460, x2: 1790, y: 600 },
   ],
   seats: [{ x: 310, y: 452, kind: 'chair' }, { x: 790, y: 806, kind: 'chair' }, { x: 990, y: 806, kind: 'chair' }],
-  bg(st, t) {
-    skyBg(t, 7);
+  // céu e nuvens a cada quadro; ilha, mar e areia no cache; ondas, barco e coqueiros por cima
+  sky(st, t) { skyBg(t, 7); },
+  bg() {
     const n = G.nightK;
-    // ilha e veleiro
+    // ilha
     fe(1900, 600, 260, 50, n > 0.5 ? '#2c4a52' : '#9ad0a0');
+    // mar
+    X.fillStyle = LG(0, 590, 0, 800, n > 0.5 ? '#1d3f73' : '#5fd0f0', n > 0.5 ? '#14305c' : '#2a9fd6'); X.fillRect(-1000, 596, 5000, 210);
+    // areia
+    X.fillStyle = LG(0, 790, 0, 1250, '#f7e3b0', '#ecc985', '#e0b670'); X.fillRect(-1000, 790, 5000, 900);
+    X.fillStyle = 'rgba(180,140,80,.25)'; X.fillRect(-1000, 790, 5000, 24);
+    for (let i = 0; i < 120; i++) fc(srand(i + 400) * 2600, 830 + srand(i + 500) * 260, 2, 'rgba(160,120,60,.25)');
+  },
+  anim(st, t) {
+    const n = G.nightK;
+    // só a faixa visível das ondas (antes: 5000 de largura em todo quadro)
+    const cx = G.cam.praia || 0, xa = Math.floor((cx - 120) / 120) * 120, xb = xa + VW + 360;
+    // veleiro
     const bx = ((t * 14) % 3400) - 400;
     fpoly([bx, 590, bx + 90, 590, bx + 76, 610, bx + 14, 610], n > 0.5 ? '#3a3d58' : '#ffffff');
     fpoly([bx + 44, 586, bx + 44, 500, bx + 84, 586], n > 0.5 ? '#5b6474' : '#ff6b6b');
-    // mar
-    X.fillStyle = LG(0, 590, 0, 800, n > 0.5 ? '#1d3f73' : '#5fd0f0', n > 0.5 ? '#14305c' : '#2a9fd6'); X.fillRect(-1000, 596, 5000, 210);
     for (let r = 0; r < 6; r++) {
       const y = 620 + r * 30;
       X.beginPath();
-      for (let x = -1000; x <= 4000; x += 40) { const yy = y + Math.sin(x * 0.02 + t * (1 + r * 0.2) + r) * 4; x === -1000 ? X.moveTo(x, yy) : X.lineTo(x, yy); }
+      for (let x = xa; x <= xb; x += 40) { const yy = y + Math.sin(x * 0.02 + t * (1 + r * 0.2) + r) * 4; x === xa ? X.moveTo(x, yy) : X.lineTo(x, yy); }
       stroke(3, `rgba(255,255,255,${0.12 + r * 0.03})`);
     }
     X.fillStyle = n > 0.5 ? 'rgba(255,246,208,.25)' : 'rgba(255,243,176,.35)';
     for (let i = 0; i < 6; i++) fe(n > 0.5 ? 700 : 2100, 620 + i * 26, 60 - i * 6 + Math.sin(t * 2 + i) * 10, 4, X.fillStyle);
-    // areia
-    X.fillStyle = LG(0, 790, 0, 1250, '#f7e3b0', '#ecc985', '#e0b670'); X.fillRect(-1000, 790, 5000, 900);
-    X.fillStyle = 'rgba(180,140,80,.25)'; X.fillRect(-1000, 790, 5000, 24);
     const sw = Math.sin(t * 0.9) * 8;
-    X.beginPath(); X.moveTo(-1000, 800 + sw);
-    for (let x = -1000; x <= 4000; x += 60) X.quadraticCurveTo(x + 30, 812 + sw + Math.sin(x * 0.05 + t * 2) * 4, x + 60, 800 + sw);
-    X.lineTo(4000, 790); X.lineTo(-1000, 790); X.closePath(); X.fillStyle = 'rgba(255,255,255,.75)'; X.fill();
-    for (let i = 0; i < 120; i++) fc(srand(i + 400) * 2600, 830 + srand(i + 500) * 260, 2, 'rgba(160,120,60,.25)');
+    X.beginPath(); X.moveTo(xa, 800 + sw);
+    for (let x = xa; x <= xb; x += 60) X.quadraticCurveTo(x + 30, 812 + sw + Math.sin(x * 0.05 + t * 2) * 4, x + 60, 800 + sw);
+    X.lineTo(xb + 60, 790); X.lineTo(xa, 790); X.closePath(); X.fillStyle = 'rgba(255,255,255,.75)'; X.fill();
     palm(1300, 815, 0.95); palm(2480, 815, 1.05);
     if (Math.random() < 0.004) Sfx.wave();
   },
