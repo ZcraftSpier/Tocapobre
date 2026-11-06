@@ -428,6 +428,34 @@ function drawArm(sx, sy, ang, e, sleeve) {
   drawHand(e.skin, sx < 0 ? 1 : -1, sleeve > 0 ? sleeve : 4);
   X.restore();
 }
+// braço dobrado no cotovelo, para poses especiais (ex.: guarda de boxe).
+// Pontos em coordenadas do personagem: s = ombro, el = cotovelo, h = punho.
+// A mão não é desenhada: quem usa coloca algo na ponta (uma luva, por exemplo).
+// A manga cobre a mesma fração do braço que cobriria no braço reto (sleeve / 80).
+function drawArmBent(s, el, h, e, sleeve) {
+  const inkC = INK || CHAR_INK, sc = sleeveColor(e);
+  const poly = (pts, w, col, cap = 'round') => {
+    X.beginPath(); X.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) X.lineTo(pts[i][0], pts[i][1]);
+    X.lineWidth = w; X.strokeStyle = col; X.lineCap = cap; X.lineJoin = 'round'; X.stroke();
+  };
+  const at = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  const L1 = Math.max(1, Math.hypot(el[0] - s[0], el[1] - s[1])), L2 = Math.max(1, Math.hypot(h[0] - el[0], h[1] - el[1]));
+  // até onde vai a manga, medido do ombro ao longo do braço
+  const cover = sleeve > 0 ? (L1 + L2) * Math.min(1, (sleeve + 6) / 80) : 0;
+  // um segmento (de a até b, que vai da distância c0 até c1 no braço): pele e o pedaço de manga que cai nele.
+  // O braço (ombro→cotovelo) vem primeiro e o antebraço por cima: na guarda, o antebraço fica na frente.
+  const seg = (a, b, c0, c1) => {
+    poly([a, b], 24.4, inkC); poly([a, b], 20, e.skin);
+    if (cover <= c0) return;
+    const k = Math.min(1, (cover - c0) / (c1 - c0)), m = at(a, b, k), len = c1 - c0;
+    poly([a, m], 29, inkC); poly([a, m], 26, sc);
+    if (e.top === 'stripeslong') for (let d = 12; d < len * k - 6; d += 18) poly([at(a, b, d / len), at(a, b, Math.min(k, (d + 8) / len))], 26, stripeCol(e), 'butt');
+    if (CUFFED.has(e.top) && cover < c1 && cover - c0 > 9) { const cc = shade(sc === '#ffffff' ? '#e6ebf2' : sc, -0.1), q = [at(a, b, (cover - c0 - 9) / len), m]; poly(q, 30, inkC); poly(q, 27, cc); }
+  };
+  seg(s, el, 0, L1);
+  seg(el, h, L1, L1 + L2);
+}
 // mão com quatro dedos e polegar (side = lado do polegar), centrada em y≈80 no braço
 function drawHand(skin, side, top = 40) {
   X.save(); X.scale(side, 1);
@@ -812,8 +840,10 @@ function drawChar(e, t, noItem) {
   const eating = e.eatT > 0;
   if (e.hold && !held) aR = -0.7;
   if (eating) aR = 2.35 + Math.sin(t * 18) * 0.08;
-  drawArm(-38, -186, aL, e, sleeve);
-  if (!eating) drawArm(38, -186, aR, e, sleeve);
+  if (!e.armPose) {
+    drawArm(-38, -186, aL, e, sleeve);
+    if (!eating) drawArm(38, -186, aR, e, sleeve);
+  }
   if (top === 'gown') for (const k of [-1, 1]) { fe(k * 40, -190, 26, 22, shade(e.shirt, 0.15)); fe(k * 37, -196, 10, 6, 'rgba(255,255,255,.35)'); }
   if (top === 'ruffle') for (const k of [-1, 1]) fe(k * 40, -184, 20, 16, shade(e.shirt, 0.12));
 
@@ -914,6 +944,8 @@ function drawChar(e, t, noItem) {
       X.save(); X.translate(hx, hy); X.rotate(aR); X.translate(0, -80); drawHand(e.skin, -1); X.restore();
     }
   }
+  // braços em pose especial (ex.: guarda de boxe): por cima de tudo, dobrados no cotovelo
+  if (e.armPose) for (const k of [-1, 1]) { const P = e.armPose[k < 0 ? 'L' : 'R']; if (P) drawArmBent([k * 38, -186], P.e, P.h, e, sleeve); }
   X.restore();
   INK = inkPrev;
 }

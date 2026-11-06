@@ -11,12 +11,15 @@ Mini.addGame((K) => {
   // bata quando a guarda estiver baixa, esquive dos socos (o "!" avisa) e
   // contra-ataque logo depois para ganhar estrelas, que viram o SUPER SOCO.
   const BOX_TIPS = ['Jab', 'Gancho', 'Gancho', 'Uppercut'];
-  function luva(x, y, r, col, flip = 1) {
-    fe(x, y + r * 0.95, r * 0.62, r * 0.32, '#ffffff');
-    fe(x, y, r, r * 1.08, col);
-    fe(x + flip * r * 0.78, y + r * 0.15, r * 0.36, r * 0.52, shade(col, -0.12));
-    fe(x - flip * r * 0.3, y - r * 0.45, r * 0.32, r * 0.2, 'rgba(255,255,255,.45)', -0.4 * flip);
-    X.beginPath(); X.ellipse(x, y, r, r * 1.08, 0, 0, TAU); stroke(r * 0.07, 'rgba(58,36,40,.45)');
+  // luva de boxe com o centro em (x, y); ang gira a luva para o punho (parte branca) apontar para o antebraço
+  function luva(x, y, r, col, flip = 1, ang = 0) {
+    X.save(); X.translate(x, y); X.rotate(ang);
+    fe(0, r * 0.95, r * 0.62, r * 0.32, '#ffffff');
+    fe(0, 0, r, r * 1.08, col);
+    fe(flip * r * 0.78, r * 0.15, r * 0.36, r * 0.52, shade(col, -0.12));
+    fe(-flip * r * 0.3, -r * 0.45, r * 0.32, r * 0.2, 'rgba(255,255,255,.45)', -0.4 * flip);
+    X.beginPath(); X.ellipse(0, 0, r, r * 1.08, 0, 0, TAU); stroke(r * 0.07, 'rgba(58,36,40,.45)');
+    X.restore();
   }
   return ({
     id: 'boxe', n: 'Boxe da Vila', ic: '🥊', col: '#ff8a8a', per: 1,
@@ -40,6 +43,27 @@ Mini.addGame((K) => {
       setTimeout(() => K.open && Sfx.bell(), 250);
     },
     lvl(g) { return g.n; },
+    // pose dos braços do rival em cada estado: cotovelo (e), luva (h) e tamanho da luva (r),
+    // em coordenadas do personagem (ombros em x = ±38, y = -186; cabeça em y = -282).
+    // O desenho do personagem liga ombro → cotovelo → luva (art.js, drawArmBent).
+    armPose(f) {
+      const P = {}, sh = Math.sin(K.t * 50) * 3;
+      for (const k of [-1, 1]) {
+        let h, e, r = 1;
+        const guardHigh = () => { h = [k * 36, -226]; e = [k * 66, -142]; };     // luvas no queixo, cotovelos fechados
+        if (f.st === 'guard' && f.guard === 'high') guardHigh();
+        else if (f.st === 'guard' || f.st === 'hurt') { h = [k * 58, -126]; e = [k * 78, -152]; }   // guarda baixa: a brecha
+        else if (f.st === 'tell' && k === f.side) {
+          if (f.kind === 'upper') { h = [k * 64 + sh, -96]; e = [k * 84, -150]; }   // luva desce para subir no uppercut
+          else { h = [k * 102 + sh, -262]; e = [k * 96, -166]; }                     // braço armado para trás
+          r = 1.1;
+        } else if (f.st === 'punch' && k === f.side) { h = [k * 20, -210]; e = [k * 62, -170]; r = f.missed ? 1.4 : 2.4; }   // soco vindo na direção da tela
+        else if (f.st === 'tell' || f.st === 'punch') guardHigh();
+        else { h = [k * 82, -104]; e = [k * 66, -142]; }                             // tonto ou caído: braços soltos
+        P[k < 0 ? 'L' : 'R'] = { h, e, r };
+      }
+      return P;
+    },
     // ---- ações do jogador
     dodgeTo(g, d) {
       if (g.phase !== 'fight' || g.dodCD > 0) return;
@@ -184,18 +208,18 @@ Mini.addGame((K) => {
       o.reactT = f.st === 'open' || f.st === 'hurt' || f.st === 'down' ? 1 : 0; o.blinkT = f.st === 'open' ? 0.05 : o.blinkT;
       // horror: apanhando, ele não reage — só sorri e olha para você, sem piscar
       if (creepy() && o.reactT) { o.reactT = 0; o.lx = 0; o.ly = 0; o.blinkT = 1; }
+      const pose = this.armPose(f);
+      o.armPose = pose;
       drawChar(o, K.t, true);
       if (f.hurt > 0) { X.globalAlpha = f.hurt * 2; fe(0, -250, 90, 110, '#ffffff'); X.globalAlpha = 1; }
-      // luvas do rival
+      // luvas do rival na ponta de cada braço (a maior por último, para ficar na frente)
       const R = 30, red = '#ff4d5e';
-      if (f.st === 'guard' && f.guard === 'high') { luva(-34, -232, R, red, -1); luva(34, -232, R, red, 1); }
-      else if (f.st === 'guard' || f.st === 'hurt') { luva(-62, -140, R, red, -1); luva(62, -140, R, red, 1); }
-      else if (f.st === 'tell') {
-        const sh = Math.sin(K.t * 50) * 3, up = f.kind === 'upper';
-        luva(-f.side * 40, -228, R, red, -f.side);
-        luva(f.side * (up ? 60 : 110) + sh, up ? -90 : -300, R * 1.1, red, f.side);
-      } else if (f.st === 'punch') { luva(-f.side * 40, -228, R, red, -f.side); luva(f.side * 20, -210, R * (f.missed ? 1.4 : 2.4), red, f.side); }
-      else { luva(-80, -110, R, red, -1); luva(80, -110, R, red, 1); }
+      for (const k of [-1, 1].sort((a, b) => pose[a < 0 ? 'L' : 'R'].r - pose[b < 0 ? 'L' : 'R'].r)) {
+        const P = pose[k < 0 ? 'L' : 'R'], [hx, hy] = P.h, [ex, ey] = P.e;
+        let ang = Math.atan2(-(ex - hx), ey - hy);
+        if (P.r > 2) ang *= 0.25;   // soco vindo na direção da tela: luva quase de frente
+        luva(hx, hy, R * P.r, red, k, ang);
+      }
       if (f.st === 'open') for (let i = 0; i < 3; i++) { const a = K.t * 5 + i * TAU / 3; starPath(Math.cos(a) * 60, -360 + Math.sin(a) * 14, 12, 5); X.fillStyle = '#ffd23f'; X.fill(); }
       X.restore();
       // aviso do golpe
@@ -212,6 +236,11 @@ Mini.addGame((K) => {
         const k = g.pT[side] > 0 ? Math.sin(Math.PI * (1 - g.pT[side] / 0.2)) : 0;
         const bx = cx0 + (side ? 1 : -1) * K.AW * 0.24 + gx, byy = 800 + Math.sin(K.t * 5 + side) * 6;
         const x = lerp(bx, cx0 + (side ? 30 : -30), k), y = lerp(byy, 470, k), r = lerp(70, 42, k);
+        // antebraço do jogador, vindo de baixo da tela até a luva
+        const hs = K.hero, skin = hs ? hs.skin : '#f2c9a0', arm = hs && (SLEEVE[hs.top] || 30) >= 70 ? sleeveColor(hs) : skin;
+        const fx = bx + (side ? 1 : -1) * 50;
+        X.beginPath(); X.moveTo(fx - 62, 1060); X.lineTo(x - r * 0.5, y + r * 0.5); X.lineTo(x + r * 0.5, y + r * 0.5); X.lineTo(fx + 62, 1060); X.closePath();
+        X.fillStyle = arm; X.fill(); stroke(5, 'rgba(58,36,40,.6)');
         luva(x, y, r, g.hurt > 0 ? '#ff8f8f' : blue, side ? -1 : 1);
       }
       if (g.hurt > 0) { X.globalAlpha = g.hurt; X.fillStyle = 'rgba(255,60,60,.35)'; X.fillRect(-20, -20, K.VW + 40, 1040); X.globalAlpha = 1; }
