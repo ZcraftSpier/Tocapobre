@@ -400,8 +400,10 @@ function onDown(ev) {
   if (UI.blocking()) return;
   canvas.setPointerCapture(ev.pointerId);
   const w = toWorld(ev.clientX, ev.clientY);
-  const P = { id: ev.pointerId, sx: ev.clientX, sy: ev.clientY, cx: ev.clientX, cy: ev.clientY, moved: false, cand: hitEnt(w), ent: null, prop: null, cam0: G.cam[G.sceneId], hist: [] };
-  if (!P.cand) P.prop = hitProp(w);
+  // páginas do diário (horror) ficam por cima de tudo, então têm prioridade no toque
+  const page = Horror.pageProp(w);
+  const P = { id: ev.pointerId, sx: ev.clientX, sy: ev.clientY, cx: ev.clientX, cy: ev.clientY, moved: false, cand: page ? null : hitEnt(w), ent: null, prop: page, cam0: G.cam[G.sceneId], hist: [] };
+  if (!P.cand && !P.prop) P.prop = hitProp(w);
   pointers.set(ev.pointerId, P);
 }
 function grab(P, h) {
@@ -631,6 +633,7 @@ function render() {
       drawItem(e, t);
     }
   }
+  Horror.drawWorld(sc, t);
   drawParts();
   for (const p of sc.props) if (p.front) p.front(st[p.id], t, st);
   Weather.drawFront(sc);
@@ -750,7 +753,7 @@ function load() {
     return true;
   } catch (e) { return false; }
 }
-function resetWorld() { newWorld(); resize(); save(); UI.setScene(G.sceneId); }
+function resetWorld() { Horror.resetAll(); newWorld(); resize(); save(); UI.setScene(G.sceneId); }
 
 // ---------- Ações globais ----------
 function goScene(id) {

@@ -305,7 +305,7 @@ const Sfx = (() => {
       ],
     },
   };
-  let detune = 0, style = null, rainSrc = null, rainGain = null, reedWave = null;
+  let detune = 0, hushUntil = 0, droneG = null, droneLv = -1, style = null, rainSrc = null, rainGain = null, reedWave = null;
   function reed(f, { t = 0, v = 0.03, dur = 0.2 } = {}) {
     if (!ok()) return;
     const a = A(), st = now() + t;
@@ -316,7 +316,7 @@ const Sfx = (() => {
   }
   function tick() {
     const NT = (n) => NOTE(n) * (detune ? 1 + (Math.random() - 0.5) * detune : 1);
-    if (muted || !ac || !style) { step++; return; }
+    if (muted || !ac || !style || ac.currentTime < hushUntil) { step++; return; }
     const S = SONGS[style], n = S.steps, bar = Math.floor(step / n), s = step % n;
     const ch = S.chords[bar % S.chords.length], mel = S.mel[bar % S.mel.length];
     if (style === 'pop') {
@@ -463,6 +463,32 @@ const Sfx = (() => {
     },
     get musicStyle() { return style; },
     // chuva contínua (ruído suave): nível 0..1
+    // ---------- sons do horror ----------
+    // zumbido grave contínuo, que "respira" devagar: nível 0..1
+    drone(level) {
+      if (!ac || Math.abs(level - droneLv) < 0.02) return;
+      droneLv = level;
+      if (!droneG) {
+        droneG = ac.createGain(); droneG.gain.value = 0; droneG.connect(out);
+        const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 200; lp.connect(droneG);
+        [[43.65, 'sawtooth', 0.35], [44.2, 'sawtooth', 0.35], [65.4, 'sine', 0.5]].forEach(([f, ty, v]) => {
+          const o = ac.createOscillator(), g = ac.createGain(); o.type = ty; o.frequency.value = f; g.gain.value = v; o.connect(g); g.connect(lp); o.start();
+        });
+        const l = ac.createOscillator(), lg = ac.createGain(); l.frequency.value = 0.12; lg.gain.value = 80; l.connect(lg); lg.connect(lp.frequency); l.start();
+        const n = ac.createBufferSource(); n.buffer = noiseBuf(ac); n.loop = true;
+        const nf = ac.createBiquadFilter(); nf.type = 'bandpass'; nf.frequency.value = 380; nf.Q.value = 0.7;
+        const ng = ac.createGain(); ng.gain.value = 0.12; n.connect(nf); nf.connect(ng); ng.connect(droneG); n.start();
+      }
+      droneG.gain.setTargetAtTime(muted ? 0 : level * 0.06, ac.currentTime, 1.6);
+    },
+    // passos devagar, como se alguém andasse pela casa
+    steps(n = 5, gap = 0.62) {
+      for (let i = 0; i < n; i++) { const t = i * gap * vary(0.06); rubber(95, 50, 0.1, { t, v: 0.08, wob: 0, wet: 0.35 }); hiss(0.06, { t, v: 0.05, f: 500, wet: 0.3 }); }
+    },
+    // três batidas pesadas na porta
+    doorKnock() { for (let i = 0; i < 3; i++) { wood(120, { t: i * 0.32, v: 0.22 }); rubber(80, 45, 0.08, { t: i * 0.32, v: 0.12, wob: 0, wet: 0.4 }); } },
+    // a música para de repente por alguns segundos
+    hush(sec) { if (ac) hushUntil = ac.currentTime + sec; },
     rain(level) {
       if (!ac) return;
       if (!rainSrc) {

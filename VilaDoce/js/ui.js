@@ -56,7 +56,7 @@ const UI = (() => {
     });
     let resetArm = false;
     $('#menuReset').addEventListener('click', (ev) => {
-      if (!resetArm) { resetArm = true; ev.currentTarget.textContent = 'Toque de novo para confirmar'; setTimeout(() => { resetArm = false; $('#menuReset').textContent = 'Recomeçar o mundo'; }, 2500); return; }
+      if (!resetArm) { resetArm = true; ev.currentTarget.textContent = (typeof Horror !== 'undefined' && Horror.resetWarning()) || 'Toque de novo para confirmar'; setTimeout(() => { resetArm = false; $('#menuReset').textContent = 'Recomeçar o mundo'; }, 2500); return; }
       resetArm = false; $('#menuReset').textContent = 'Recomeçar o mundo';
       resetWorld(); hide('#menu'); toast('Mundo novinho em folha ✨');
     });
@@ -108,7 +108,7 @@ const UI = (() => {
     $('#wxOpts').querySelectorAll('[data-wk]').forEach((b) => b.addEventListener('click', () => { Weather.setCfg(b.dataset.wk, b.dataset.v); Sfx.click(); buildWxOpts(); }));
   }
   function syncNight() { setNightIcon(G.night); }
-  function blocking() { return splashOn || MapView.isOpen() || Album.isOpen() || Mini.isOpen() || !$('#menu').classList.contains('hidden') || !$('#people').classList.contains('hidden') || !!edChar; }
+  function blocking() { return (typeof Horror !== 'undefined' && Horror.blocking()) || splashOn || MapView.isOpen() || Album.isOpen() || Mini.isOpen() || !$('#menu').classList.contains('hidden') || !$('#people').classList.contains('hidden') || !!edChar; }
 
   // ---------- bolha "Editar" sobre o personagem tocado ----------
   function showBubble(c) { bubbleChar = c; bubbleT = 3.2; $('#editBubble').classList.remove('hidden'); placeBubble(); }

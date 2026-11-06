@@ -50,6 +50,7 @@ const Album = (() => {
     ['recorde', '🏅', 'Recordista', 'Faça 50 pontos em algum minigame.'],
     ['cofrinho', '💰', 'Cofrinho cheio', 'Junte 300 moedas no fliperama.'],
   ];
+  SECRETS.push(['fuga', '🚪', 'Fugiu', '???'], ['morador', '🏚️', 'Morador da Vila', '???']);
   const COL = { lugar: '#4dabf7', receita: '#ff9f43', segredo: '#a77bf3', conquista: '#ff5f9e' };
 
   function list() {
@@ -89,6 +90,13 @@ const Album = (() => {
     document.getElementById('albumCount').textContent = `${done} / ${L.length}`;
     document.getElementById('albumBar').style.width = (100 * done / L.length) + '%';
     document.querySelectorAll('#albumTabs button').forEach((b) => b.classList.toggle('on', b.dataset.cat === tab));
+    if (tab === 'paginas' && typeof Horror !== 'undefined') {
+      // páginas do diário encontradas depois da virada
+      document.getElementById('albumGrid').innerHTML = Horror.pageList().map((p, i) => p.found
+        ? `<div class="acard got pagina"><b>Página ${i + 1}</b><small>${p.texto}</small></div>`
+        : `<div class="acard pagina"><div class="stk lock">?</div><b>Página ${i + 1}</b><small>Em algum lugar da vila...</small></div>`).join('');
+      return;
+    }
     document.getElementById('albumGrid').innerHTML = L.filter((s) => s.cat === tab).map((s) => got[s.id]
       ? `<div class="acard got" style="--c:${COL[s.cat]}"><div class="stk">${typeof Horror !== 'undefined' ? Horror.icon(s) : s.ic}</div><b>${s.n}</b>${s.cat === 'receita' ? `<small>${recipeText(s.id)}</small>` : ''}</div>`
       : `<div class="acard"><div class="stk lock">?</div><b>???</b><small>${s.hint}</small></div>`).join('');

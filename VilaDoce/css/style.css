@@ -290,3 +290,21 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; }
 .vila-escura #splash { filter: grayscale(.7) brightness(.6) contrast(1.1); }
 .vila-escura .brand { filter: grayscale(.8); }
 .vila-escura .logo circle:first-child { fill: #5a2030; }
+
+/* páginas do diário e finais (horror) */
+#hOverlay { position: absolute; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(10, 6, 16, .72); animation: hIn .6s ease-out; }
+#hOverlay.opaque { background: #07050b; }
+#hOverlay.opaque.light { background: #fff7fb; }
+#hOverlay .hBox { max-width: 520px; text-align: center; display: flex; flex-direction: column; gap: 18px; align-items: center; }
+#hOverlay .hPaper { background: #f3ead6; color: #3a2a24; padding: 28px 26px; border-radius: 4px; font-size: 22px; line-height: 1.45; transform: rotate(-1.5deg); box-shadow: 0 18px 50px rgba(0,0,0,.55); clip-path: polygon(0 3%, 12% 0, 30% 2%, 55% 0, 78% 3%, 100% 0, 98% 40%, 100% 72%, 97% 100%, 70% 97%, 42% 100%, 18% 97%, 0 100%, 2% 60%); }
+#hOverlay .hSmall { color: #b9aec6; font-size: 15px; }
+#hOverlay .hTitle { color: #f3e6ff; font-size: 28px; font-weight: 700; }
+#hOverlay .hText { color: #d9cfe6; font-size: 20px; line-height: 1.4; }
+#hOverlay .hText.big { font-size: 30px; font-weight: 600; animation: hIn 1.2s ease-out; }
+#hOverlay.light .hText { color: #c45b8f; }
+#hOverlay .hBtns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+@keyframes hIn { from { opacity: 0; } to { opacity: 1; } }
+.acard.pagina { text-align: left; align-items: flex-start; }
+.acard.pagina.got { background: #f3ead6; }
+.acard.pagina small { font-size: 13px; line-height: 1.35; }
+#albumTabs button.hidden { display: none; }
