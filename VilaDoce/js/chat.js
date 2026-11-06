@@ -17,7 +17,7 @@ const Chat = (() => {
   }
   function busy(e) { return talks.some((k) => k.a === e || k.b === e); }
   function free(e) {
-    return e && e.scene === G.sceneId && byId.has(e.id) && !e.heldBy && ['idle', 'sit', 'swing'].includes(e.state);
+    return e && !e.ghost && !(e.stare > 0) && e.scene === G.sceneId && byId.has(e.id) && !e.heldBy && ['idle', 'sit', 'swing'].includes(e.state);
   }
   function say(e, text) {
     if (!cfg.chat) return 0;

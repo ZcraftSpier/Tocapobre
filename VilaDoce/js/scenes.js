@@ -127,6 +127,7 @@ function drawWindow(x, y, w, h, opt = {}) {
   }
   if (n > 0.01) {
     X.globalAlpha = n; nightSky(x, y, w, h, opt.seed || 0);
+    X.globalAlpha = 1; if (typeof Horror !== 'undefined') Horror.windowFigure(x, y, w, h, opt.seed, n); X.globalAlpha = n;
     fc(x + w * 0.72, y + h * 0.3, 24, '#fff6d0'); fc(x + w * 0.72 + 10, y + h * 0.3 - 6, 20, '#22306c');
     if (opt.city) for (let i = 0; i < 9; i++) {
       const bw = 70 + srand(i) * 60, bh = 90 + srand(i + 3) * 160, bx = x + i * (w / 8) - 20;

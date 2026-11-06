@@ -18,7 +18,7 @@ const Mini = (() => {
   const FONT = (w, s) => `${w} ${s}px Fredoka, sans-serif`;
 
   // ---------- personagem que joga ----------
-  function cast() { return (typeof G !== 'undefined' ? G.ents : []).filter((e) => e.kind === 'char'); }
+  function cast() { return (typeof G !== 'undefined' ? G.ents : []).filter((e) => e.kind === 'char' && !e.ghost); }
   function pickHero() {
     const L = cast();
     if (!L.length) { hero = Object.assign(C('Você', 'casa', 0, 0), {}); return; }
@@ -1432,6 +1432,7 @@ const Mini = (() => {
   }
   function play(gm) {
     cur = gm; G_ = gm.start(); parts = []; mode = 'ready'; hudLast = ''; hitT = 0; flashT = 0;
+    Horror.onMiniStart();
     $('#miniMenu').classList.add('hidden'); $('#miniOver').classList.add('hidden');
   }
   function begin() { mode = 'play'; Sfx.sparkle(); }
@@ -1450,6 +1451,7 @@ const Mini = (() => {
     setTimeout(() => { if (mode === 'over') $('#miniOver').classList.remove('hidden'); }, 350);
     rec && sc > 0 ? Sfx.sticker() : Sfx.drop(0.5);
     Album.unlock('a_fliperama');
+    Horror.onMiniEnd();
     if (sc >= 50) Album.unlock('a_recorde');
     if (data.coins >= 300) Album.unlock('a_cofrinho');
   }
@@ -1466,7 +1468,8 @@ const Mini = (() => {
     if (!open) return;
     const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016); lastT = now; t += dt;
     hudPop -= dt;
-    if (mode === 'play') { if (hitT > 0) hitT -= dt; else cur.update(G_, dt); stepParts(dt); }
+    const rev = Horror.revealing;
+    if (mode === 'play' && !rev) { if (hitT > 0) hitT -= dt; else cur.update(G_, dt); stepParts(dt); }
     else if (mode === 'over') stepParts(dt);
     if (shake > 0) shake -= dt;
     const X0 = X; X = ctx;
@@ -1489,6 +1492,7 @@ const Mini = (() => {
         X.globalAlpha = 1;
       }
     } finally { X = X0; }
+    if (Horror.miniOverlay(ctx, cv, dt, mode === 'play') && !open) return;
     if (mode === 'menu' && hero) drawHeroPreview();
     raf = requestAnimationFrame(loop);
   }

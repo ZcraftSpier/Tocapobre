@@ -305,7 +305,7 @@ const Sfx = (() => {
       ],
     },
   };
-  let style = null, rainSrc = null, rainGain = null, reedWave = null;
+  let detune = 0, style = null, rainSrc = null, rainGain = null, reedWave = null;
   function reed(f, { t = 0, v = 0.03, dur = 0.2 } = {}) {
     if (!ok()) return;
     const a = A(), st = now() + t;
@@ -315,21 +315,22 @@ const Sfx = (() => {
     osc(reedWave, f, st, st + dur * 2, lp); osc(reedWave, f * 1.004, st, st + dur * 2, lp);
   }
   function tick() {
+    const NT = (n) => NOTE(n) * (detune ? 1 + (Math.random() - 0.5) * detune : 1);
     if (muted || !ac || !style) { step++; return; }
     const S = SONGS[style], n = S.steps, bar = Math.floor(step / n), s = step % n;
     const ch = S.chords[bar % S.chords.length], mel = S.mel[bar % S.mel.length];
     if (style === 'pop') {
-      if (s === 0) tuba(NOTE(ch[0]), { v: 0.05 });
-      if (s === 4) tuba(NOTE(ch[1]), { v: 0.045 });
-      if (s === 2 || s === 6) ch.slice(2).forEach((x, i) => pluck(NOTE(x), { t: i * 0.01, v: 0.03, dec: 0.12, bright: 0.3, wet: 0.1 }));
+      if (s === 0) tuba(NT(ch[0]), { v: 0.05 });
+      if (s === 4) tuba(NT(ch[1]), { v: 0.045 });
+      if (s === 2 || s === 6) ch.slice(2).forEach((x, i) => pluck(NT(x), { t: i * 0.01, v: 0.03, dec: 0.12, bright: 0.3, wet: 0.1 }));
       if (s % 2 === 1) wood(s % 4 === 1 ? 900 : 1250, { v: 0.022 });
-      if (mel[s]) pluck(NOTE(mel[s]), { v: 0.065, dec: 0.3, bright: 0.55, partial: 3.9, wet: 0.25 });
+      if (mel[s]) pluck(NT(mel[s]), { v: 0.065, dec: 0.3, bright: 0.55, partial: 3.9, wet: 0.25 });
       if (bar % 8 === 7 && s === 5) whistle(600, 1200, 0.3, { v: 0.018 });
     } else {
-      if (s === 0 || s === 4) { pluck(NOTE(s ? ch[1] : ch[0]), { v: 0.1, dec: 0.3, bright: 0.15 }); rubber(120, 70, 0.08, { v: 0.04, wob: 6, wet: 0 }); }
-      if (s === 2 || s === 6 || s === 7) ch.slice(2).forEach((x) => reed(NOTE(x), { v: s === 7 ? 0.007 : 0.011, dur: 0.09 }));
+      if (s === 0 || s === 4) { pluck(NT(s ? ch[1] : ch[0]), { v: 0.1, dec: 0.3, bright: 0.15 }); rubber(120, 70, 0.08, { v: 0.04, wob: 6, wet: 0 }); }
+      if (s === 2 || s === 6 || s === 7) ch.slice(2).forEach((x) => reed(NT(x), { v: s === 7 ? 0.007 : 0.011, dur: 0.09 }));
       if (s % 2 === 1) hiss(0.035, { v: 0.014, type: 'bandpass', f: 5200, q: 1.5, wet: 0 });
-      if (mel[s]) reed(NOTE(mel[s]), { v: 0.022, dur: 0.15 });
+      if (mel[s]) reed(NT(mel[s]), { v: 0.022, dur: 0.15 });
     }
     step++;
   }
@@ -448,6 +449,7 @@ const Sfx = (() => {
     // testes: renderiza um efeito num contexto offline
     _offline(a, dest, fn) { const pt = TC, pb = TB; TC = a; TB = makeBus(a, dest); try { fn(); } finally { TC = pt; TB = pb; } },
     setVoices(v) { voices = v; },
+    setDetune(d) { detune = d; },
     get voices() { return voices; },
     setMuted(m) { muted = m; },
     get muted() { return muted; },

@@ -90,7 +90,7 @@ const Album = (() => {
     document.getElementById('albumBar').style.width = (100 * done / L.length) + '%';
     document.querySelectorAll('#albumTabs button').forEach((b) => b.classList.toggle('on', b.dataset.cat === tab));
     document.getElementById('albumGrid').innerHTML = L.filter((s) => s.cat === tab).map((s) => got[s.id]
-      ? `<div class="acard got" style="--c:${COL[s.cat]}"><div class="stk">${s.ic}</div><b>${s.n}</b>${s.cat === 'receita' ? `<small>${recipeText(s.id)}</small>` : ''}</div>`
+      ? `<div class="acard got" style="--c:${COL[s.cat]}"><div class="stk">${typeof Horror !== 'undefined' ? Horror.icon(s) : s.ic}</div><b>${s.n}</b>${s.cat === 'receita' ? `<small>${recipeText(s.id)}</small>` : ''}</div>`
       : `<div class="acard"><div class="stk lock">?</div><b>???</b><small>${s.hint}</small></div>`).join('');
   }
   function recipeText(id) {

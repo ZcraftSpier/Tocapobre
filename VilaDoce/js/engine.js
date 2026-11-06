@@ -455,6 +455,8 @@ function onUp(ev) {
 }
 function tapEnt(e, w) {
   if (e.kind === 'char') {
+    if (e.ghost) { Horror.tapGhost(e); return; }
+    if (e.stare > 0 && !e.ghost) e.stare = 0; // tocou: volta ao normal, como se nada tivesse acontecido
     const now = performance.now();
     if (lastTap.id === e.id && now - lastTap.t < 380) { lastTap.id = null; UI.openEditor(e); return; }
     lastTap = { id: e.id, t: now };
@@ -522,7 +524,8 @@ function updEnt(e, dt, sc) {
     let tx = Math.sin(G.t * 0.5 + e.phase) * 3, ty = 0;
     const lp = G.lookPt;
     const mate = e.talkWith ? getEnt(e.talkWith) : null;
-    if (mate) { const h = headPos(e), m2 = mate.kind === 'char' ? headPos(mate) : { x: mate.x, y: mate.y - 60 }; tx = Math.sign(m2.x - h.x) * 5; ty = clamp((m2.y - h.y) / 60, -3, 3); }
+    if (e.stare > 0) { tx = 0; ty = 0; }
+    else if (mate) { const h = headPos(e), m2 = mate.kind === 'char' ? headPos(mate) : { x: mate.x, y: mate.y - 60 }; tx = Math.sign(m2.x - h.x) * 5; ty = clamp((m2.y - h.y) / 60, -3, 3); }
     else if (lp && e.scene === G.sceneId) { const h = headPos(e); const dx = lp.x - h.x, dy = lp.y - h.y, d = Math.hypot(dx, dy); if (d < 700 && d > 1) { tx = (dx / d) * 5; ty = (dy / d) * 4; } }
     e.lx = lerp(e.lx || 0, tx, Math.min(1, dt * 8)); e.ly = lerp(e.ly || 0, ty, Math.min(1, dt * 8));
     if (e.state === 'held') {
@@ -593,6 +596,7 @@ function update(dt) {
   Chat.update(dt);
   Life.update(dt);
   Weather.update(dt);
+  Horror.update(dt);
   const sid = G.sceneId;
   Sfx.music(sid === 'casa' && G.st.casa.radio.on ? 'pop' : sid === 'estancia' && G.st.estancia.radio.on ? 'gaucho' : sid === 'estudio' && G.st.estudio.secNeon && G.st.estudio.secNeon.disco > 0 ? 'pop' : null);
   saveT += dt; if (saveT > 4) { saveT = 0; save(); }
@@ -635,7 +639,7 @@ function render() {
   const k = G.nightK;
   if (k > 0.01) {
     X.globalCompositeOperation = 'multiply';
-    X.fillStyle = `rgb(${Math.round(lerp(255, 78, k))},${Math.round(lerp(255, 86, k))},${Math.round(lerp(255, 160, k))})`;
+    X.fillStyle = Horror.tint(k) || `rgb(${Math.round(lerp(255, 78, k))},${Math.round(lerp(255, 86, k))},${Math.round(lerp(255, 160, k))})`;
     X.fillRect(0, 0, CSSW, CSSH);
     X.globalCompositeOperation = 'lighter';
     const lights = [];
@@ -711,7 +715,7 @@ function frame_(now) {
 // ---------- Salvar / carregar ----------
 function save() {
   try {
-    const ents = G.ents.map((e) => { const o = Object.assign({}, e); if (o.state === 'held') o.state = 'idle'; delete o.onSurf; delete o.say; delete o.talkWith; delete o.talkCD; delete o.goal; delete o.moving; delete o.dancing; return o; });
+    const ents = G.ents.filter((e) => !e.ghost).map((e) => { const o = Object.assign({}, e); if (o.state === 'held') o.state = 'idle'; delete o.onSurf; delete o.say; delete o.talkWith; delete o.talkCD; delete o.goal; delete o.moving; delete o.dancing; return o; });
     localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, sceneId: G.sceneId, night: G.night, ents, st: G.st, cam: G.cam, nextId: G.nextId, friends: G.friends || {} }));
   } catch (e) { /* armazenamento indisponível */ }
 }
@@ -769,7 +773,7 @@ function addCharacter() {
   UI.refreshDock();
   return c;
 }
-function toggleNight() { G.night = !G.night; Sfx.sparkle(); UI.toast(G.night ? 'Boa noite! 🌙' : 'Bom dia! ☀️'); return G.night; }
+function toggleNight() { if (Horror.blockDay()) return G.night; G.night = !G.night; Sfx.sparkle(); UI.toast(G.night ? 'Boa noite! 🌙' : 'Bom dia! ☀️'); return G.night; }
 
 function boot() {
   canvas = document.getElementById('game');
@@ -795,6 +799,7 @@ function boot() {
   addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   UI.init();
+  Horror.init();
   requestAnimationFrame((t) => { lastT = t; frame_(t); });
 }
 window.addEventListener('DOMContentLoaded', boot);
