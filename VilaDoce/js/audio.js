@@ -487,6 +487,8 @@ const Sfx = (() => {
     },
     // três batidas pesadas na porta
     doorKnock() { for (let i = 0; i < 3; i++) { wood(120, { t: i * 0.32, v: 0.22 }); rubber(80, 45, 0.08, { t: i * 0.32, v: 0.12, wob: 0, wet: 0.4 }); } },
+    // susto: acorde agudo e dissonante, de ataque seco
+    sting() { [1480, 1568, 2217].forEach((f, i) => chime(f, { t: i * 0.004, v: 0.07, dec: 0.9, wet: 0.5 })); hiss(0.25, { v: 0.08, type: 'highpass', f: 3000, wet: 0.4 }); },
     // a música para de repente por alguns segundos
     hush(sec) { if (ac) hushUntil = ac.currentTime + sec; },
     rain(level) {

@@ -3,6 +3,8 @@
 // Recebe o kit K do Fliperama (js/minigames.js). Valores que mudam a cada
 // quadro (posição da área de jogo, tempo, tremida...) são lidos como K.nome.
 Mini.addGame((K) => {
+  // a partir da fase 2 do horror (js/horror.js), algo estranho aparece neste jogo
+  const creepy = () => typeof Horror !== 'undefined' && Horror.stage >= 2;
   const { FONT, burst, drawHero, drawParts, end, flash, hud, pill, ring, say, sideShade, sky, vib } = K;
   // ---------- 6. Piano Doce ----------
   // Teclas caem em 4 colunas; toque cada uma quando chegar e a música vai saindo.
@@ -69,7 +71,9 @@ Mini.addGame((K) => {
       k.hit = 1; g.started = true; g.hits++; g.combo++; g.joyT = 0.35;
       const perfect = Math.abs(k.y + TH - KEYS_Y) < 110, pts = (perfect ? 3 : 1) * before;
       g.score += pts;
-      Sfx.note(k.f); vib(perfect ? 12 : 6);
+      // horror: às vezes a nota sai meio tom abaixo, errada
+      const wrong = creepy() && Math.random() < (Horror.stage >= 3 ? 0.12 : 0.05);
+      Sfx.note(wrong ? k.f * Math.pow(2, -1 / 12) : k.f); vib(perfect ? 12 : 6);
       if (k.song >= 0) g.songT = 2.5, g.songN = k.song;
       const cx = bx + lw * (k.lane + 0.5);
       burst(cx, k.y + TH / 2, perfect ? 12 : 6, [PIANO_COLS[k.lane], '#fff', '#ffd23f'], perfect ? 380 : 260);

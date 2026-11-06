@@ -3,6 +3,8 @@
 // Recebe o kit K do Fliperama (js/minigames.js). Valores que mudam a cada
 // quadro (posição da área de jogo, tempo, tremida...) são lidos como K.nome.
 Mini.addGame((K) => {
+  // a partir da fase 2 do horror (js/horror.js), algo estranho aparece neste jogo
+  const creepy = () => typeof Horror !== 'undefined' && Horror.stage >= 2;
   const { burst, cloudArt, coinArt, drawHero, drawParts, end, flash, hitstop, hud, ring, say, sideShade, sky, vib } = K;
   // ---------- 5. Corre-Corre ----------
   const OBST = [['cone', 56, 74], ['caixa', 84, 84], ['caixa2', 84, 160], ['banco', 150, 62], ['hidrante', 56, 92], ['poca', 130, 12]];
@@ -71,7 +73,12 @@ Mini.addGame((K) => {
       for (let i = -1; i < K.VW / 230 + 2; i++) {
         const id = Math.floor(d * 0.3 / 230) + i, x = id * 230 - d * 0.3, hh = 160 + srand(id) * 120, col = HC[((id % 6) + 6) % 6];
         fr(x + 20, 760 - hh, 170, hh + 20, 10, col); fpoly([x + 8, 770 - hh, x + 105, 690 - hh, x + 202, 770 - hh], shade(col, -0.25));
-        for (let j = 0; j < 2; j++) fr(x + 45 + j * 75, 800 - hh, 44, 40, 6, '#fff8e1');
+        for (let j = 0; j < 2; j++) {
+          // horror: um rosto pálido numa janela (sempre a mesma casa enquanto ela passa)
+          const face = creepy() && srand(id * 7 + j + 31) > 0.95, wx = x + 45 + j * 75, wy = 800 - hh;
+          fr(wx, wy, 44, 40, 6, face ? '#1d1b24' : '#fff8e1');
+          if (face) { fc(wx + 22, wy + 22, 10, '#d8d6de'); fc(wx + 18, wy + 20, 2, '#05040a'); fc(wx + 26, wy + 20, 2, '#05040a'); }
+        }
       }
       // árvores
       for (let i = -1; i < K.VW / 300 + 2; i++) {

@@ -60,7 +60,7 @@ const HORROR_FASES = [null, { min: 8, plays: 3 }, { min: 20, plays: 8 }, { min: 
 
 const Horror = (() => {
   const KEY = 'vilaDoce.h';
-  const fresh = () => ({ t: 0, plays: 0, stage: 0, pages: [], ending: null, lembra: 0, hinted: false });
+  const fresh = () => ({ t: 0, plays: 0, stage: 0, pages: [], ending: null, lembra: 0, hinted: false, mirrorDone: false });
   const st = fresh();
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* sem armazenamento */ }
   const q = /[?&]fase=(\d)/.exec(location.search);
@@ -69,7 +69,7 @@ const Horror = (() => {
   // textos originais da página, para voltar ao normal depois de recomeçar ou fugir
   const $ = (s) => document.querySelector(s);
   const ORIG = { title: document.title, brand: $('.brand b')?.textContent, h1: $('#splash h1')?.innerHTML, p: $('#splash p')?.textContent };
-  let saveT = 0, evT = 40, ghostT = 0, rv = null, overlay = null;
+  let saveT = 0, evT = 40, ghostT = 0, rv = null, overlay = null, mir = null, mirWait = -1;
 
   const calm = () => st.ending === 'ficou';                 // final "ficar": a vila em paz, noite eterna
   const hunting = () => st.stage >= 4 && !st.ending;         // depois da virada, procurando as páginas
@@ -97,6 +97,8 @@ const Horror = (() => {
   function event() {
     const L = chars(), s = st.stage;
     const r = Math.random();
+    // no Estúdio, o espelho é o susto da vez
+    if (s >= 2 && G.sceneId === 'estudio' && r < 0.35) return mirrorScare();
     // sons: batidas na porta, passos, a música que some de repente
     if (s >= 2 && r < 0.12) return Sfx.doorKnock();
     if (s >= 2 && r < 0.22) return Sfx.steps(rand(4, 7) | 0);
@@ -141,6 +143,12 @@ const Horror = (() => {
       if (!calm()) for (const e of G.ents) if (e.kind === 'char' && !e.ghost && e.scene === G.sceneId && !e.stare && e.state === 'idle' && !e.goal && Math.random() < dt * 0.15) stare(e, rand(4, 9));
       if (hunting() && !st.hinted && !overlay) { st.hinted = true; save(); setTimeout(() => UI.toast(`${HORROR_TXT.paginasDica} (${st.pages.length}/${HORROR_TXT.paginas.length})`), 2500); }
     }
+    // primeira visita ao Estúdio a partir da fase 2: o espelho assusta uma vez, sem demora
+    if (mir) { mir.t -= dt; if (mir.t <= 0) mir = null; }
+    if (st.stage >= 2 && !calm() && !st.mirrorDone && G.sceneId === 'estudio') {
+      if (mirWait < 0) mirWait = rand(5, 9);
+      mirWait -= dt; if (mirWait <= 0) { st.mirrorDone = true; save(); mirrorScare(); }
+    } else if (G.sceneId !== 'estudio') mirWait = -1;
     if (st.stage < 1 || calm()) return;
     evT -= dt;
     if (evT <= 0) { evT = st.stage >= 4 ? rand(12, 25) : st.stage >= 2 ? rand(25, 45) : rand(50, 90); event(); }
@@ -160,6 +168,29 @@ const Horror = (() => {
     fc(cx, by - h * 0.55, w * 0.14, '#05040a'); fr(cx - w * 0.17, by - h * 0.45, w * 0.34, h * 0.5, 14, '#05040a');
     fc(cx - w * 0.05, by - h * 0.56, 2.5, '#fff6d0'); fc(cx + w * 0.05, by - h * 0.56, 2.5, '#fff6d0');
     X.globalAlpha = 1;
+  }
+
+  // ---------- susto no espelho do Estúdio ----------
+  // por uma fração de segundo, o espelho mostra o estranho atrás de você
+  function mirrorScare() {
+    const sts = [['st1', 400], ['st2', 800]], cam = G.cam.estudio || 0;
+    const vis = sts.filter(([, x]) => x > cam + 60 && x < cam + VW - 60);
+    const [id] = pick(vis.length ? vis : sts);
+    mir = { id, t: 0.38 };
+    Sfx.sting(); try { navigator.vibrate && navigator.vibrate(60); } catch (e) { /* */ }
+  }
+  // chamado pelo desenho de cada espelho (cx = centro; o vidro vai de y 160 a 470)
+  function mirror(id, cx) {
+    if (!mir || mir.id !== id) return;
+    X.save(); RR(cx - 120, 160, 240, 310, 112); X.clip();
+    X.fillStyle = 'rgba(10,8,20,.35)'; X.fillRect(cx - 120, 160, 240, 310);
+    const j = (Math.random() - 0.5) * 4;
+    fe(cx + j, 300, 78, 96, '#141218');                           // cabelo
+    fe(cx + j, 322, 52, 64, '#d8d6de');                           // rosto pálido
+    fe(cx - 18 + j, 312, 8, 11, '#05040a'); fe(cx + 18 + j, 312, 8, 11, '#05040a');
+    line(cx - 10 + j, 352, cx + 10 + j, 352, 3, '#3a2a30');
+    fr(cx - 70 + j, 380, 140, 100, 40, '#1d1b24');                 // ombros
+    X.restore();
   }
 
   // ---------- páginas do diário (depois da virada) ----------
@@ -299,7 +330,7 @@ const Horror = (() => {
   return {
     // para testar no console: Horror._evento() dispara um evento, Horror._estranho() chama o estranho,
     // Horror._paginas() pega todas as páginas menos uma
-    _evento: event, _estranho: spawnGhost,
+    _evento: event, _estranho: spawnGhost, _espelho: mirrorScare, mirror,
     _paginas() { st.pages = HORROR_TXT.paginas.map((_, i) => i).slice(0, -1); save(); applyStage(); },
     init, update, tint, icon, windowFigure, drawWorld, pageProp, pageList, tapGhost, onMiniStart, onMiniEnd, miniOverlay,
     blockDay, blocking, resetAll, resetWarning, setStage, reset,

@@ -3,6 +3,8 @@
 // Recebe o kit K do Fliperama (js/minigames.js). Valores que mudam a cada
 // quadro (posição da área de jogo, tempo, tremida...) são lidos como K.nome.
 Mini.addGame((K) => {
+  // a partir da fase 2 do horror (js/horror.js), algo estranho aparece neste jogo
+  const creepy = () => typeof Horror !== 'undefined' && Horror.stage >= 2;
   const { FONT, burst, cast, drawParts, end, flash, hitstop, hud, pill, ring, say, sky, starPath, vib } = K;
   // ---------- 8. Boxe da Vila ----------
   // Luta em primeira pessoa contra os moradores da vila. O rival se defende:
@@ -180,6 +182,8 @@ Mini.addGame((K) => {
       if (f.st === 'down' || g.phase === 'won') { X.translate(0, f.ko * 200); X.rotate(f.ko * 1.2); }
       X.scale(s * sc, s * sc); X.rotate(rot);
       o.reactT = f.st === 'open' || f.st === 'hurt' || f.st === 'down' ? 1 : 0; o.blinkT = f.st === 'open' ? 0.05 : o.blinkT;
+      // horror: apanhando, ele não reage — só sorri e olha para você, sem piscar
+      if (creepy() && o.reactT) { o.reactT = 0; o.lx = 0; o.ly = 0; o.blinkT = 1; }
       drawChar(o, K.t, true);
       if (f.hurt > 0) { X.globalAlpha = f.hurt * 2; fe(0, -250, 90, 110, '#ffffff'); X.globalAlpha = 1; }
       // luvas do rival

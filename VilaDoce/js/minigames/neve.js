@@ -3,6 +3,8 @@
 // Recebe o kit K do Fliperama (js/minigames.js). Valores que mudam a cada
 // quadro (posição da área de jogo, tempo, tremida...) são lidos como K.nome.
 Mini.addGame((K) => {
+  // a partir da fase 2 do horror (js/horror.js), algo estranho aparece neste jogo
+  const creepy = () => typeof Horror !== 'undefined' && Horror.stage >= 2;
   const { burst, coinArt, drawHero, drawParts, end, flash, hitstop, hud, keys, lerpCol, pill, ring, say, sky, vib } = K;
   // ---------- 9. Descida na Neve ----------
   // Snowboard sem fim: toque para pular, segure no ar para dar mortal e
@@ -17,7 +19,7 @@ Mini.addGame((K) => {
     gapAt(g, x) { return g.gaps.find((q) => x > q.a && x < q.b); },
     start() {
       const g = { p: [rand(0, 6), rand(0, 6), rand(0, 6)], x: 0, y: 0, v: 450, vx: 0, vy: 0, st: 'ground', rot: 0, spin: 0, camX: 0, camY: 0,
-        gaps: [], rocks: [], ropes: [], coins: [], nextGap: 2400, nextRock: 900, nextRope: 1600, nextCoin: 700,
+        gaps: [], rocks: [], ropes: [], coins: [], figs: [], nextFig: rand(2500, 4500), nextGap: 2400, nextRock: 900, nextRope: 1600, nextCoin: 700,
         dist: 0, pts: 0, score: 0, got: 0, chain: 0, chainT: 0, boost: 0, dead: 0, rope: null, lastSnow: 0 };
       g.y = this.T(g, 0); g.camY = g.y; g.rot = this.slope(g, 0);
       return g;
@@ -26,6 +28,7 @@ Mini.addGame((K) => {
       const far = g.x + 2600;
       const free = (a, b) => !g.gaps.some((q) => b > q.a - 150 && a < q.b + 150) && !g.rocks.some((r) => r.x > a - 150 && r.x < b + 150);
       while (g.nextGap < far) { const w = 200 + Math.min(220, g.dist / 250); g.gaps.push({ a: g.nextGap, b: g.nextGap + w }); g.nextGap += w + rand(1700, 3200); }
+      while (g.nextFig < far) { if (creepy() && !this.gapAt(g, g.nextFig)) g.figs.push({ x: g.nextFig, a: 1 }); g.nextFig += rand(4000, 8000); }
       while (g.nextRock < far) { if (free(g.nextRock - 40, g.nextRock + 40)) g.rocks.push({ x: g.nextRock, s: rand(0.8, 1.25) }); g.nextRock += rand(650, 1500); }
       while (g.nextRope < far) {
         const a = g.nextRope, b = a + rand(380, 620);
@@ -38,7 +41,7 @@ Mini.addGame((K) => {
         g.nextCoin += rand(700, 1400);
       }
       const old = g.x - 800;
-      g.gaps = g.gaps.filter((q) => q.b > old); g.rocks = g.rocks.filter((r) => r.x > old); g.ropes = g.ropes.filter((r) => r.b > old); g.coins = g.coins.filter((c) => !c.got && c.x > old);
+      g.gaps = g.gaps.filter((q) => q.b > old); g.rocks = g.rocks.filter((r) => r.x > old); g.ropes = g.ropes.filter((r) => r.b > old); g.coins = g.coins.filter((c) => !c.got && c.x > old); g.figs = g.figs.filter((f) => f.x > old);
     },
     jump(g) {
       if (g.dead) return;
@@ -121,6 +124,8 @@ Mini.addGame((K) => {
           }
         }
       }
+      // horror: a figura some quando você chega perto
+      for (const f of g.figs) if (f.x - g.x < 430) f.a = Math.max(0, f.a - dt * 7);
       // moedas
       for (const c of g.coins) if (!c.got && Math.abs(c.x - g.x) < 50 && Math.abs(c.y - (g.y - 60)) < 80) { c.got = true; g.got++; Sfx.coin(); burst(this.sx(g, c.x), c.y - g.camY + 520, 5, ['#ffd23f', '#fff1a8'], 200); }
       // câmera
@@ -176,6 +181,8 @@ Mini.addGame((K) => {
       }
       if (open2) flush(K.VW + 40);
       X.fillStyle = LG(0, 300, 0, 1000, '#ffffff', '#dfeaf8'); X.fill(); stroke(4, 'rgba(140,170,210,.6)');
+      // figura parada na encosta (horror)
+      for (const f of g.figs) { if (f.a <= 0) continue; const x = ox(f.x), y = this.T(g, f.x) + oy; X.globalAlpha = f.a; fr(x - 14, y - 86, 28, 80, 12, '#141218'); fc(x, y - 100, 16, '#141218'); fc(x - 5, y - 102, 2.2, '#fff6d0'); fc(x + 5, y - 102, 2.2, '#fff6d0'); X.globalAlpha = 1; }
       // pedras
       for (const r of g.rocks) { const x = ox(r.x), y = this.T(g, r.x) + oy; fe(x, y - 14 * r.s, 38 * r.s, 30 * r.s, '#7a8394'); fe(x - 8 * r.s, y - 26 * r.s, 18 * r.s, 10 * r.s, '#ffffff'); }
       for (const c of g.coins) if (!c.got) coinArt(ox(c.x), c.y + oy, 18, K.t + c.x * 0.01);

@@ -668,6 +668,7 @@ function makeStation(id, cx, seatIdx) {
     draw(s, t) {
       fr(cx - 140, 140, 280, 350, 130, '#ffd6e5');
       fr(cx - 120, 160, 240, 310, 112, LG(cx - 120, 160, cx + 120, 470, '#eaf6ff', '#c8e2f5', '#eaf6ff'));
+      if (typeof Horror !== 'undefined') Horror.mirror(id, cx);
       fpoly([cx - 70, 200, cx - 20, 200, cx - 110, 400, cx - 120, 330], 'rgba(255,255,255,.45)');
       for (let i = 0; i < 9; i++) {
         const a = Math.PI + (i / 8) * Math.PI, bx = cx + Math.cos(a) * 128, by = 290 + Math.sin(a) * 140;
