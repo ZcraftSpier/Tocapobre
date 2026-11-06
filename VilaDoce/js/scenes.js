@@ -664,7 +664,10 @@ SCENES.cafe = {
 function makeStation(id, cx, seatIdx) {
   return {
     id, x: cx - 120, y: 150, w: 240, h: 380,
-    tap() { Sfx.sparkle(); UI.toast('Coloque alguém na cadeira para mudar o visual ✨'); return true; },
+    tap() {
+      if (typeof Horror !== 'undefined' && Horror.mirrorTap(id, seatIdx)) return true;   // ritual do espelho (só à noite)
+      Sfx.sparkle(); UI.toast('Coloque alguém na cadeira para mudar o visual ✨'); return true;
+    },
     draw(s, t) {
       fr(cx - 140, 140, 280, 350, 130, '#ffd6e5');
       fr(cx - 120, 160, 240, 310, 112, LG(cx - 120, 160, cx + 120, 470, '#eaf6ff', '#c8e2f5', '#eaf6ff'));

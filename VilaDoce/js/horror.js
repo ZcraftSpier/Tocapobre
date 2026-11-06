@@ -2,8 +2,15 @@
 // ======================================================
 //  A Vila por baixo: o horror que vai aparecendo aos poucos
 // ======================================================
-//  Fases (avançam com o tempo de jogo OU com as partidas no Fliperama):
-//   0 – tudo normal
+//  O horror só COMEÇA quando o jogador faz o RITUAL DO ESPELHO (veja HORROR_RITUAL):
+//  à noite, no Estúdio, com uma única pessoa lá, sentada na cadeira de um espelho,
+//  bater 3 vezes nesse espelho em poucos segundos. Até lá o jogo é só fofo.
+//  Pistas para descobrir: moradores contam a "lenda do espelho" nas conversas de
+//  noite, uma figurinha secreta do álbum dá a dica, à noite o espelho faz "toc"
+//  em vez de brilhar, e quem quase acerta vê o espelho embaçar com uma mão.
+//
+//  Fases (depois do ritual, avançam com o tempo de jogo OU com as partidas no Fliperama):
+//   0 – tudo normal (até o ritual)
 //   1 – quase imperceptível: alguém para e olha para você; uma fala sai errada
 //   2 – inquietante: um estranho aparece no canto, figura na janela à noite,
 //       música desafina e às vezes some, zumbido à noite, passos, batidas na
@@ -13,8 +20,9 @@
 //       espalhadas pelos lugares; juntando todas, o jogador escolhe FUGIR ou FICAR
 //
 //  Para testar: abra o jogo com ?fase=0..4 no endereço (ex.: index.html?fase=4)
-//  ou rode no console: Horror.setStage(4), Horror._paginas() (pega todas as
-//  páginas menos uma), Horror._evento(), Horror._estranho(), Horror.reset().
+//  ou rode no console: Horror._ritual() (faz o ritual na hora), Horror.setStage(4),
+//  Horror._paginas() (pega todas as páginas menos uma), Horror._evento(),
+//  Horror._estranho(), Horror.reset().
 //
 //  TEXTOS: todos ficam aqui embaixo para você trocar pela sua história.
 // ======================================================
@@ -54,13 +62,34 @@ const HORROR_TXT = {
   finalFicar: ['Você ficou.', 'Eles pararam de olhar.', 'Agora você também sorri.', 'Bem-vindo à Vila.'],
   subtituloFugiu: 'Crie suas próprias histórias num mundinho cheio de surpresas. De novo.',
   recomecarAviso: 'Tem certeza? Eles vão lembrar de você.',
+  // pistas do ritual: conversas dos moradores ("A:fala|B:resposta") e a dica da figurinha secreta
+  lendasNoite: [
+    'A:Conhece a lenda do espelho do Estúdio?|B:Que de noite ele responde se a gente bater três vezes?|A:Isso! Mas só se a pessoa estiver sozinha...|B:Credo! Nem pensar!',
+    'A:Minha avó dizia pra nunca bater no espelho de noite.|B:Por quê?|A:Porque alguém pode bater de volta.',
+  ],
+  lendasEstudio: [
+    'A:Esse espelho embaça sozinho às vezes.|B:Deve ser o vapor do secador.|A:De noite? Sem ninguém aqui?',
+    'A:Não gosto de sentar sozinho nessa cadeira.|B:Por quê?|A:Parece que tem alguém do outro lado do espelho.',
+  ],
+  figurinha: 'Do outro lado',
+  dicaAlbum: 'Quando a vila dorme, só uma pessoa na cadeira. Três batidas no espelho.',
 };
-// minutos de jogo ou partidas no Fliperama para chegar a cada fase (o que vier primeiro)
-const HORROR_FASES = [null, { min: 8, plays: 3 }, { min: 20, plays: 8 }, { min: 35, plays: 15 }];
+// O RITUAL que acorda a vila. Troque aqui para mudar o que o jogador precisa fazer.
+const HORROR_RITUAL = {
+  cena: 'estudio',   // lugar onde ficam os espelhos
+  noite: true,       // precisa ser de noite (botão da lua)
+  sozinho: true,     // só UMA pessoa naquele lugar
+  sentado: true,     // essa pessoa sentada na cadeira do espelho em que se bate
+  batidas: 3,        // quantas batidas (toques) no espelho
+  segundos: 3,       // ...dentro de quantos segundos
+};
+// fase 1 só com o ritual; as seguintes: minutos de jogo ou partidas no Fliperama
+// contados A PARTIR DO RITUAL (o que vier primeiro)
+const HORROR_FASES = [null, null, { min: 8, plays: 4 }, { min: 18, plays: 9 }];
 
 const Horror = (() => {
   const KEY = 'vilaDoce.h';
-  const fresh = () => ({ t: 0, plays: 0, stage: 0, pages: [], ending: null, lembra: 0, hinted: false, mirrorDone: false });
+  const fresh = () => ({ t: 0, plays: 0, stage: 0, pages: [], ending: null, lembra: 0, hinted: false, mirrorDone: false, cracked: null });
   const st = fresh();
   try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) { /* sem armazenamento */ }
   const q = /[?&]fase=(\d)/.exec(location.search);
@@ -69,13 +98,18 @@ const Horror = (() => {
   // textos originais da página, para voltar ao normal depois de recomeçar ou fugir
   const $ = (s) => document.querySelector(s);
   const ORIG = { title: document.title, brand: $('.brand b')?.textContent, h1: $('#splash h1')?.innerHTML, p: $('#splash p')?.textContent };
-  let saveT = 0, evT = 40, ghostT = 0, rv = null, overlay = null, mir = null, mirWait = -1;
+  let saveT = 0, evT = 40, ghostT = 0, rv = null, overlay = null, mir = null, mirWait = -1, fog = null, taps = { id: null, n: 0, t0: 0 };
+  // pistas do ritual entram nas conversas dos moradores
+  if (typeof DIALOGS !== 'undefined') {
+    DIALOGS.noite.push(...HORROR_TXT.lendasNoite);
+    if (DIALOGS.lugares.estudio) DIALOGS.lugares.estudio.push(...HORROR_TXT.lendasEstudio);
+  }
 
   const calm = () => st.ending === 'ficou';                 // final "ficar": a vila em paz, noite eterna
   const hunting = () => st.stage >= 4 && !st.ending;         // depois da virada, procurando as páginas
 
   function check() {
-    if (st.stage >= 3) return;
+    if (st.stage < 1 || st.stage >= 3) return;   // a fase 1 só começa com o ritual
     const f = HORROR_FASES[st.stage + 1];
     if (st.t / 60 >= f.min || st.plays >= f.plays) { st.stage++; save(); applyStage(); }
   }
@@ -145,6 +179,7 @@ const Horror = (() => {
     }
     // primeira visita ao Estúdio a partir da fase 2: o espelho assusta uma vez, sem demora
     if (mir) { mir.t -= dt; if (mir.t <= 0) mir = null; }
+    if (fog) { fog.t -= dt; if (fog.t <= 0) fog = null; }
     if (st.stage >= 2 && !calm() && !st.mirrorDone && G.sceneId === 'estudio') {
       if (mirWait < 0) mirWait = rand(5, 9);
       mirWait -= dt; if (mirWait <= 0) { st.mirrorDone = true; save(); mirrorScare(); }
@@ -179,8 +214,65 @@ const Horror = (() => {
     mir = { id, t: 0.38 };
     Sfx.sting(); try { navigator.vibrate && navigator.vibrate(60); } catch (e) { /* */ }
   }
+  // ---------- o ritual do espelho ----------
+  // chamado quando o jogador toca num espelho do Estúdio; devolve true se o toque foi "usado" aqui
+  function mirrorTap(id, seatIdx) {
+    const R = HORROR_RITUAL;
+    if (st.stage >= 1 || G.sceneId !== R.cena || (R.noite && !G.night)) return false;   // de dia (ou depois do ritual): espelho normal
+    if (taps.id !== id || G.t - taps.t0 > R.segundos) taps = { id, n: 0, t0: G.t };
+    taps.n++;
+    Sfx.knock();                                      // à noite, o espelho faz "toc" em vez de brilhar
+    if (taps.n < R.batidas) return true;
+    taps = { id: null, n: 0, t0: 0 };
+    const people = G.ents.filter((e) => e.kind === 'char' && !e.ghost && e.scene === R.cena);
+    const seated = people.find((e) => e.seat === seatIdx && e.state === 'sit');
+    if ((R.sozinho && people.length !== 1) || (R.sentado && !seated)) {
+      // quase: o espelho embaça e aparece a marca de uma mão do outro lado
+      fog = { id, t: 3 }; Sfx.whoosh();
+      return true;
+    }
+    ritual(id, seated || people[0]);
+    return true;
+  }
+  function ritual(id, who) {
+    st.stage = 1; st.t = 0; st.plays = 0; save(); applyStage();
+    mir = { id, t: 1.6 };                             // o estranho aparece no espelho, agora por mais tempo
+    Sfx.sting(); Sfx.hush(12);
+    try { navigator.vibrate && navigator.vibrate([60, 40, 120]); } catch (e) { /* */ }
+    const fd = document.getElementById('fade'); if (fd) { fd.classList.remove('go'); fd.classList.add('dark'); void fd.offsetWidth; fd.classList.add('go'); setTimeout(() => fd.classList.remove('dark', 'go'), 700); }
+    for (const e of G.ents) if (e.kind === 'char' && !e.ghost && e.scene === G.sceneId) stare(e, 9);
+    if (who) who.stare = 12;
+    setTimeout(() => { st.cracked = id; save(); Sfx.poof(); emit('star', id === 'st2' ? 800 : 400, 300, 6); }, 1600);   // o espelho racha
+    setTimeout(() => Sfx.doorKnock(), 2400);                                                                           // e alguém bate de volta
+    setTimeout(() => Album.unlock('s_espelho'), 4500);
+  }
+
   // chamado pelo desenho de cada espelho (cx = centro; o vidro vai de y 160 a 470)
   function mirror(id, cx) {
+    // rachadura que fica depois do ritual
+    if (st.cracked === id) {
+      const ox = cx + 34, oy = 262;
+      X.save(); RR(cx - 120, 160, 240, 310, 112); X.clip();
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * TAU + srand(i + 3) * 0.5;
+        let x = ox, y = oy; X.beginPath(); X.moveTo(x, y);
+        for (let k = 1; k <= 4; k++) { const r = 34 * k * (0.7 + srand(i * 7 + k) * 0.6); x = ox + Math.cos(a + (srand(i + k) - 0.5) * 0.5) * r; y = oy + Math.sin(a + (srand(i * 3 + k) - 0.5) * 0.5) * r; X.lineTo(x, y); }
+        stroke(4, 'rgba(70,70,95,.35)'); stroke(1.6, 'rgba(255,255,255,.85)');
+      }
+      fc(ox, oy, 6, 'rgba(255,255,255,.7)');
+      X.restore();
+    }
+    // embaçado com a marca de uma mão (quase fez o ritual)
+    if (fog && fog.id === id) {
+      const a = Math.min(1, fog.t) * 0.7;
+      X.save(); RR(cx - 120, 160, 240, 310, 112); X.clip();
+      X.globalAlpha = a; X.fillStyle = '#f4f7fb'; X.fillRect(cx - 120, 160, 240, 310);
+      // a mão encostada do outro lado do vidro
+      const hx = cx - 20, hy = 330;
+      fe(hx, hy, 26, 30, 'rgba(150,160,180,.55)');
+      [[-22, -40, -0.35], [-8, -50, -0.1], [8, -50, 0.1], [22, -42, 0.3], [32, -6, 0.9]].forEach(([dx, dy, r]) => fe(hx + dx, hy + dy, 7, 18, 'rgba(150,160,180,.55)', r));
+      X.globalAlpha = 1; X.restore();
+    }
     if (!mir || mir.id !== id) return;
     X.save(); RR(cx - 120, 160, 240, 310, 112); X.clip();
     X.fillStyle = 'rgba(10,8,20,.35)'; X.fillRect(cx - 120, 160, 240, 310);
@@ -330,7 +422,8 @@ const Horror = (() => {
   return {
     // para testar no console: Horror._evento() dispara um evento, Horror._estranho() chama o estranho,
     // Horror._paginas() pega todas as páginas menos uma
-    _evento: event, _estranho: spawnGhost, _espelho: mirrorScare, mirror,
+    _evento: event, _estranho: spawnGhost, _espelho: mirrorScare, mirror, mirrorTap,
+    _ritual() { ritual('st1', G.ents.find((e) => e.kind === 'char' && e.scene === G.sceneId)); },
     _paginas() { st.pages = HORROR_TXT.paginas.map((_, i) => i).slice(0, -1); save(); applyStage(); },
     init, update, tint, icon, windowFigure, drawWorld, pageProp, pageList, tapGhost, onMiniStart, onMiniEnd, miniOverlay,
     blockDay, blocking, resetAll, resetWarning, setStage, reset,

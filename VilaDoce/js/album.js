@@ -50,14 +50,16 @@ const Album = (() => {
     ['recorde', '🏅', 'Recordista', 'Faça 50 pontos em algum minigame.'],
     ['cofrinho', '💰', 'Cofrinho cheio', 'Junte 300 moedas no fliperama.'],
   ];
-  SECRETS.push(['fuga', '🚪', 'Fugiu', '???'], ['morador', '🏚️', 'Morador da Vila', '???']);
+  SECRETS.push(['fuga', '🚪', 'Fugiu', '???'], ['morador', '🏚️', 'Morador da Vila', '???'],
+    ['espelho', '🪞', () => (typeof HORROR_TXT !== 'undefined' ? HORROR_TXT.figurinha : 'Do outro lado'), () => (typeof HORROR_TXT !== 'undefined' ? HORROR_TXT.dicaAlbum : '???')]);
   const COL = { lugar: '#4dabf7', receita: '#ff9f43', segredo: '#a77bf3', conquista: '#ff5f9e' };
 
   function list() {
     const L = [];
     PLACES.forEach(([id, ic]) => L.push({ id: 'l_' + id, cat: 'lugar', ic, n: SCENES[id] ? SCENES[id].name : id, hint: 'Visite este lugar.' }));
     (typeof RECIPES !== 'undefined' ? RECIPES : []).forEach((r) => L.push({ id: 'r_' + r.id, cat: 'receita', ic: r.ic, n: r.n, hint: r.need.map((x, i) => (i === 0 ? ITEMS[x]?.n || x : '?')).join(' + ') }));
-    SECRETS.forEach(([id, ic, n, hint]) => L.push({ id: 's_' + id, cat: 'segredo', ic, n, hint }));
+    const val = (v) => (typeof v === 'function' ? v() : v);
+    SECRETS.forEach(([id, ic, n, hint]) => L.push({ id: 's_' + id, cat: 'segredo', ic, n: val(n), hint: val(hint) }));
     ACH.forEach(([id, ic, n, hint]) => L.push({ id: 'a_' + id, cat: 'conquista', ic, n, hint }));
     return L;
   }

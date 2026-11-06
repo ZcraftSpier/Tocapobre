@@ -17,6 +17,8 @@ button { font-family: inherit; color: inherit; cursor: pointer; border: 0; }
 /* vinheta suave: antes era um gradiente pintado no canvas a cada quadro */
 #vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse farthest-corner at 50% 50%, rgba(40,20,60,0) 45%, rgba(40,20,60,.16) 100%); }
 #fade.go { animation: fade .5s ease-out; }
+#fade.dark { background: #05040a; }
+#fade.dark.go { animation: fade .7s ease-out; }
 @keyframes fade { from { opacity: .9; } to { opacity: 0; } }
 
 /* ---------- HUD ---------- */
